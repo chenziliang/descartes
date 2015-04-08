@@ -1,12 +1,12 @@
-package main
+package base
 
 import (
 	"sync/atomic"
 	"fmt"
 	"strconv"
-	"sort"
 	"time"
 	"math/rand"
+	"github.com/petar/GoLLRB/llrb"
 )
 
 var jobId int64 = 0
@@ -47,7 +47,8 @@ func New(f Func, when int64, interval int32, props map[string]string) *Job {
 	}
 }
 
-func (job *Job) Less(rjob *Job) bool {
+func (job *Job) Less(other llrb.Item) bool {
+	rjob := other.(*Job)
 	if job.when < rjob.when {
 		return true
 	}
@@ -98,23 +99,78 @@ func Test() error {
 	return nil
 }
 
-func main() {
+
+func buildLLRBTree(jobs []*Job) *llrb.LLRB {
 	now := time.Now().Unix()
-	fmt.Println(now)
+
+	tree := llrb.New()
+	for _, job := range jobs {
+	    tree.InsertNoReplace(job)
+	}
+	fmt.Printf("Build llrb tree: %d sec\n", time.Now().Unix() - now)
+	return tree
+}
+
+func buildJobs(n int) []*Job {
+	now := time.Now().Unix()
+
 	src := rand.NewSource(now)
 	r := rand.New(src)
 
-	var jobs JobList
-	for i := 0; i < 1000000; i++ {
+	jobs := make([]*Job, 0, n)
+	for i := 0; i < n; i++ {
 		job := New(Test, time.Now().Unix() + int64(r.Int() % 7), int32(r.Int() % 3), make(map[string]string))
-	    jobs = append(jobs, job)
+		jobs = append(jobs, job)
+	}
+	fmt.Printf("Build %d jobs tree: %d sec\n", n, time.Now().Unix() - now)
+	return jobs
+}
+
+func _main() {
+	n := 1000000
+	index := n / 2
+	jobs := buildJobs(n)
+	tree := buildLLRBTree(jobs)
+	if tree.Len() != n {
+		panic("Something is wrong, the number is not right")
 	}
 
-	j := jobs[r.Int() % 1000000]
-	fmt.Println(j)
-	sort.Sort(jobs)
-	fmt.Println(time.Now().Unix() - now)
-	i := sort.Search(len(jobs), func(i int) bool { return !jobs[i].Less(j) })
-	fmt.Println(time.Now().Unix() - now)
-	fmt.Println(jobs[i])
+	now := time.Now().Unix()
+	lastMin := tree.DeleteMin()
+	for tree.Len() != 0 {
+		nowMin := tree.DeleteMin()
+		if !lastMin.Less(nowMin) {
+			panic("Something is wrong with the llrb")
+		}
+	}
+	fmt.Printf("Delete all mins %d sec\n", time.Now().Unix() - now)
+
+	tree = buildLLRBTree(jobs)
+	now = time.Now().Unix()
+	lastMax := tree.DeleteMax()
+	for tree.Len() != 0 {
+		nowMax := tree.DeleteMax()
+		if lastMax.Less(nowMax) {
+			panic("Something is wrong with the llrb")
+		}
+	}
+	fmt.Printf("Delete all maxs %d sec\n", time.Now().Unix() - now)
+
+	tree = buildLLRBTree(jobs)
+	now = time.Now().UnixNano()
+	_ = tree.Max()
+	fmt.Printf("Look for max: %d nano sec\n", time.Now().UnixNano() - now)
+
+	now = time.Now().UnixNano()
+	_ = tree.Min()
+	fmt.Printf("Look for min: %d nano sec\n", time.Now().UnixNano() - now)
+
+	for i := 0; i < 10; i++ {
+		now = time.Now().UnixNano()
+		item := tree.Get(jobs[index + i])
+		fmt.Printf("Look for rand: %d nano sec\n", time.Now().UnixNano() - now)
+		if item.(*Job).Id() != jobs[index + i].Id() {
+			panic("Something wrong has happended")
+		}
+	}
 }
