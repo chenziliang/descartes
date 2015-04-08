@@ -1,6 +1,5 @@
 package base
 
-
 type DataLoaderConfig struct {
 	ServerURL string
 	Username string

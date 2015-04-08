@@ -1,6 +1,7 @@
 package snow
 
 import (
+	"bytes"
 	"net/http"
 	"io/ioutil"
 	"compress/gzip"
@@ -15,6 +16,7 @@ type SnowDataLoader struct {
 	endpoint string
 	timestampField string
 	lastTimestamp string
+	collecting bool
 	http_client *http.Client
 }
 
@@ -28,16 +30,33 @@ func NewSnowDataLoader(
 		endpoint: endpoint,
 		timestampField: timestampField,
 		lastTimestamp: timestamp,
+		collecting: false,
 		http_client: &http.Client{},
 	}
 }
 
 func (snow *SnowDataLoader) getURL() string {
-	url := snow.config.ServerURL + "/" + snow.endpoint + ".do?JSONv2&sysparm_query=" + snow.timestampField + ">=" + snow.lastTimestamp + "^ORDERBY" + snow.timestampField + "&sysparm_record_count=5000"
-	return url
+	var buffer bytes.Buffer
+	buffer.WriteString(snow.config.ServerURL)
+	buffer.WriteString("/")
+	buffer.WriteString(snow.endpoint)
+	buffer.WriteString(".do?JSONv2&sysparm_query=")
+	buffer.WriteString(snow.timestampField)
+	buffer.WriteString(snow.lastTimestamp)
+	buffer.WriteString("^ORDERBY")
+	buffer.WriteString("&sysparm_record_count=5000")
+	return buffer.String()
 }
 
 func (snow *SnowDataLoader) CollectData() (string, error) {
+	// FIXME atomic
+	if snow.collecting {
+		glog.Info("Last data collection for %s has not been done")
+		return "", nil
+	}
+	snow.collecting = true
+	defer func() {snow.collecting = false} ()
+
 	req, err := http.NewRequest("GET", snow.getURL(), nil)
 	if err != nil {
 		glog.Error("Failed to create request ", err)
