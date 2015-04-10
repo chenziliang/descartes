@@ -35,7 +35,7 @@ func (jobs JobList) Less(i, j int) bool {
 	return jobs[i].Less(jobs[j])
 }
 
-func New(f Func, when int64, interval int64, props map[string]string) *Job {
+func NewJob(f Func, when int64, interval int64, props map[string]string) *Job {
 	return &Job {
 		f: f,
 		id: strconv.FormatInt(atomic.AddInt64(&jobId, 1), 10),

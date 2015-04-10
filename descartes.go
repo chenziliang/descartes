@@ -5,15 +5,15 @@ import (
 	"time"
 	"math/rand"
 	"fmt"
-	"github.com/chenziliang/descartes/plugins/snow"
+	"github.com/chenziliang/descartes/sources/snow"
 	"github.com/petar/GoLLRB/llrb"
 	db "github.com/chenziliang/descartes/base"
 )
 
 
-func test(n int) db.Func {
+func test(n int, id int) db.Func {
 	return func() error {
-	    fmt.Println(fmt.Sprintf("call every %d second.", n))
+	    fmt.Println(fmt.Sprintf("id=%d call every %d second.", id, n))
 	    return nil
 	}
 }
@@ -30,7 +30,7 @@ func buildLLRBTree(jobs []*db.Job) *llrb.LLRB {
 }
 
 func buildJobs(n int) []*db.Job {
-	now := time.Now().Unix()
+	now := time.Now().UnixNano()
 
 	src := rand.NewSource(now)
 	r := rand.New(src)
@@ -38,11 +38,11 @@ func buildJobs(n int) []*db.Job {
 	s := int64(time.Second)
 	jobs := make([]*db.Job, 0, n)
 	for i := 0; i < n; i++ {
-		job := db.New(test(i + 1), 0, int64(s * int64(r.Int()) % 3600),
-		              make(map[string]string))
+		job := db.NewJob(test(i + 1, i), 0, int64(s * (int64(r.Int()) % 3600 + 1)),
+		                 make(map[string]string))
 		jobs = append(jobs, job)
 	}
-	fmt.Printf("Build %d jobs tree: %d sec\n", n, time.Now().Unix() - now)
+	fmt.Printf("Build %d jobs tree: %d sec\n", n, time.Now().UnixNano() - now)
 	return jobs
 }
 
@@ -52,7 +52,9 @@ func buildJobsNoRand(n int) []*db.Job {
 	s := int64(time.Second)
 	jobs := make([]*db.Job, 0, n)
 	for i := 0; i < n; i++ {
-		job := db.New(test(i + 1), 0, int64(int64(i + 1) * s), make(map[string]string))
+		interval := i % 3600 + 1
+		job := db.NewJob(test(interval, i + 1), 0,
+		                 int64(interval) * s, make(map[string]string))
 		jobs = append(jobs, job)
 	}
 	fmt.Printf("Build %d jobs tree: %d sec\n", n, time.Now().Unix() - now)
@@ -127,13 +129,14 @@ func testSnowDataLoader() {
 func main() {
 	flag.Parse()
 
-	n := 100000
-	jobs := buildJobs(n)
+	n := 1000000
+	jobs := buildJobsNoRand(n)
 	scheduler := db.NewScheduler()
-	scheduler.SetMaxStartDelay(0)
+	// scheduler.SetMaxStartDelay(10 * int(time.Second))
+	// scheduler.SetMaxStartDelay(0)
 	scheduler.Start()
 	scheduler.AddJobs(jobs)
-	time.Sleep(60 * time.Second)
+	time.Sleep(1 * time.Hour)
 	scheduler.Teardown()
 	time.Sleep(time.Second)
 }

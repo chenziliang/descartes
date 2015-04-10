@@ -137,14 +137,20 @@ func (sched *Scheduler) getReadyJobs() (sleep_time time.Duration, jobs []*Job) {
 			readyJobs = append(readyJobs, job)
 			sched.jobs.DeleteMin()
 		} else {
-			sleep_time = time.Duration(job.ExpirationTime() - now)
 			break
 		}
 	}
 
 	for _, job := range readyJobs {
-		job.UpdateExpirationTime()
-	    sched.jobs.InsertNoReplace(job)
+		if job.Interval() > 0 {
+			job.UpdateExpirationTime()
+            sched.jobs.InsertNoReplace(job)
+		}
+	}
+
+	if sched.jobs.Len() > 0 {
+		job = sched.jobs.Min().(*Job)
+		sleep_time = time.Duration(job.ExpirationTime() - now)
 	}
 
 	return sleep_time, readyJobs

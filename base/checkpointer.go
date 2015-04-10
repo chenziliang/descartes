@@ -1,22 +1,60 @@
 package base
 
+import (
+	"os"
+	"io/ioutil"
+	"path/filepath"
+	"github.com/golang/glog"
+)
 
 type Checkpointer interface {
-	GetCheckpoint(key string) string
-	WriteCheckpoint(key string) error
+	GetCheckpoint(key string) ([]byte, error)
+	WriteCheckpoint(key, value string) error
+	DeleteCheckpoint(key string) error
 }
 
+
+const (
+	checkpointFilePostfix = ".ck"
+)
 
 type LocalFileCheckpointer struct {
-	filePath string
+	fileDir string
+	namespace string
 }
 
 
-func (*LocalFileCheckpointer) GetCheckpoint(key string) string {
-	return ""
+func NewFileCheckpointer(fileDir, namespace string) Checkpointer {
+	return &LocalFileCheckpointer {
+		fileDir: fileDir,
+		namespace: namespace,
+	}
 }
 
+func (ck *LocalFileCheckpointer) GetCheckpoint(key string) ([]byte, error) {
+	ckFileName := filepath.Join(ck.fileDir, ck.namespace + "_" + key + checkpointFilePostfix)
+	content, err := ioutil.ReadFile(ckFileName)
+	if err != nil {
+		glog.Error("Failed to get checkpoint from %s", ckFileName)
+		return nil, err
+	}
+	return content, err
+}
 
-func (*LocalFileCheckpointer) WriteCheckpoint(key string) error {
-	return nil
+func (ck *LocalFileCheckpointer) WriteCheckpoint(key, value string) error {
+	ckFileName := filepath.Join(ck.fileDir, ck.namespace + "_" + key + checkpointFilePostfix)
+	err := ioutil.WriteFile(ckFileName, []byte(value), 0644)
+	if err != nil {
+		glog.Error("Failed to write checkpoint to %s", ckFileName)
+	}
+	return err
+}
+
+func (ck *LocalFileCheckpointer) DeleteCheckpoint(key string) error {
+	ckFileName := filepath.Join(ck.fileDir, ck.namespace + "_" + key + checkpointFilePostfix)
+	err := os.Remove(ckFileName)
+	if err != nil {
+		glog.Error("Failed to remove checkpoint %s", ckFileName)
+	}
+	return err
 }
