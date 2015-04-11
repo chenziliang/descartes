@@ -4,14 +4,22 @@ import (
 	"fmt"
 	"strings"
 	"bytes"
+	"errors"
 	"sync/atomic"
 	"net/http"
 	"io/ioutil"
 	"compress/gzip"
+	"encoding/base64"
 	"github.com/golang/glog"
 	db "github.com/chenziliang/descartes/base"
 )
 
+
+type collectionState struct {
+	Version string
+	NextCollectionTime string
+	LastTimeRecords []string
+}
 
 type SnowDataLoader struct {
 	*db.BaseConfig
@@ -19,6 +27,8 @@ type SnowDataLoader struct {
 	checkpoint db.Checkpointer
 	collecting int32
 	http_client *http.Client
+	ckKey string
+	state collectionState
 }
 
 // NewSnowDataLoader
@@ -34,12 +44,19 @@ func NewSnowDataLoader(
 		}
 	}
 
+	reader := []byte(config.ServerURL)
+	var writer bytes.Buffer
+	encoder := base64.NewEncoder(base64.StdEncoding, &writer)
+	defer encoder.Close()
+	encoder.Write(reader)
+
 	return &SnowDataLoader {
 		BaseConfig: config,
 		writer: eventWriter,
 		checkpoint: checkpointer,
 		collecting: 0,
 		http_client: &http.Client{},
+		ckKey: writer.String(),
 	}
 }
 
@@ -107,6 +124,7 @@ func (snow *SnowDataLoader) IndexData() error {
 	}
 
 	if records, ok := jobj["records"].([]interface{}); ok {
+		snow.removeCollectedRecords(records)
 		allEvents :=  db.NewEvent(snow.BaseConfig)
 		var record []string
 		for i := 0; i < len(records); i++ {
@@ -118,8 +136,26 @@ func (snow *SnowDataLoader) IndexData() error {
 		}
 
 		if len(records) > 0 {
-	        return snow.writer.WriteEvents(allEvents)
+			err := snow.writer.WriteEvents(allEvents)
+			if err != nil {
+				return err
+			}
+			return snow.writeCheckpoint(nextTimestamp)
 		}
+	} else if errDesc, ok := jobj["error"]; ok {
+		glog.Errorf("Failed to get data from %s, error=%s", snow.getURL(), errDesc)
+		return errors.New(fmt.Sprintf("%+v", errDesc))
 	}
 	return nil
+}
+
+func (snow *SnowDataLoader) removeCollectedRecords(records []interface{}) {
+	lastCheckpoint := snow.getCheckpoint()
+}
+
+func (snow *SnowDataLoader) writeCheckpoint(nextTimestamp string) error {
+	return snow.checkpoint.WriteCheckpoint(snow.ckKey + "_" + snow.AdditionalConfig["endpoint"], []byte("xxx"))
+}
+
+func (snow *SnowDataLoader) getCheckpoint() {
 }
