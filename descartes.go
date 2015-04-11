@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"time"
-	_ "github.com/chenziliang/descartes/base"
+	"github.com/chenziliang/descartes/base"
 )
 
 
