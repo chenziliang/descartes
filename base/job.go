@@ -91,5 +91,3 @@ func (job *Job) Prop(key string) string {
 func (job *Job) SetProp(key, value string) {
 	job.props[key] = value
 }
-
-

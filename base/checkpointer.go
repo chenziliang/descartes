@@ -9,7 +9,7 @@ import (
 
 type Checkpointer interface {
 	GetCheckpoint(key string) ([]byte, error)
-	WriteCheckpoint(key, value string) error
+	WriteCheckpoint(key string, value []byte) error
 	DeleteCheckpoint(key string) error
 }
 
@@ -35,17 +35,17 @@ func (ck *LocalFileCheckpointer) GetCheckpoint(key string) ([]byte, error) {
 	ckFileName := filepath.Join(ck.fileDir, ck.namespace + "_" + key + checkpointFilePostfix)
 	content, err := ioutil.ReadFile(ckFileName)
 	if err != nil {
-		glog.Error("Failed to get checkpoint from %s", ckFileName)
+		glog.Error("Failed to get checkpoint from ", ckFileName)
 		return nil, err
 	}
 	return content, err
 }
 
-func (ck *LocalFileCheckpointer) WriteCheckpoint(key, value string) error {
+func (ck *LocalFileCheckpointer) WriteCheckpoint(key string, value []byte) error {
 	ckFileName := filepath.Join(ck.fileDir, ck.namespace + "_" + key + checkpointFilePostfix)
 	err := ioutil.WriteFile(ckFileName, []byte(value), 0644)
 	if err != nil {
-		glog.Error("Failed to write checkpoint to %s", ckFileName)
+		glog.Error("Failed to write checkpoint to ", ckFileName)
 	}
 	return err
 }
@@ -54,7 +54,7 @@ func (ck *LocalFileCheckpointer) DeleteCheckpoint(key string) error {
 	ckFileName := filepath.Join(ck.fileDir, ck.namespace + "_" + key + checkpointFilePostfix)
 	err := os.Remove(ckFileName)
 	if err != nil {
-		glog.Error("Failed to remove checkpoint %s", ckFileName)
+		glog.Error("Failed to remove checkpoint ", ckFileName)
 	}
 	return err
 }
