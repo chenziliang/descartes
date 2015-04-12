@@ -3,7 +3,6 @@ package splunk
 
 import (
 	"testing"
-	"fmt"
 	"net/http"
 	"crypto/tls"
 	"net/url"
@@ -24,7 +23,6 @@ func TestSplunkRest(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to get session key from %s, error=%s", splunkURI, err)
 	}
-	fmt.Println(sessionKey)
 
 	metaProps := url.Values{}
 	metaProps.Add("host", "myhost.com")
