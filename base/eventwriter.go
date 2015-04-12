@@ -8,7 +8,8 @@ import (
 type EventWriter interface {
 	Start()
 	Stop()
-	WriteEvents(events *Event) error
+	WriteEventsSync(events *Event) error
+	WriteEventsAsync(events *Event) error
 }
 
 
@@ -21,10 +22,17 @@ func (d *StdoutEventWriter) Start() {
 func (d *StdoutEventWriter) Stop() {
 }
 
-func (d *StdoutEventWriter) WriteEvents(events *Event) error {
-	rawEvents := events.RawEvents()
-	for i := 0; i < len(rawEvents); i++ {
-	    fmt.Println(rawEvents[i])
+func (d *StdoutEventWriter) WriteEventsSync(events *Event) error {
+	return d.doWriteEvents(events)
+}
+
+func (d *StdoutEventWriter) WriteEventsASync(events *Event) error {
+	return d.doWriteEvents(events)
+}
+
+func (d *StdoutEventWriter) doWriteEvents(events *Event) error {
+	for i := 0; i < len(events.RawEvents); i++ {
+	    fmt.Println(events.RawEvents[i])
 	}
 	return nil
 }

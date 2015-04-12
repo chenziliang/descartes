@@ -8,26 +8,18 @@ type BaseConfig struct {
 	ProxyURL string
 	ProxyUsername string
 	ProxyPassword string
-	AdditionalConfig map[string] string
+	AdditionalConfig map[string]string
 }
 
 type Event struct {
-	*BaseConfig
-	rawEvents []string
+	MetaInfo map[string]string
+	RawEvents [][]byte
 }
 
 
-func NewEvent(config *BaseConfig) *Event {
+func NewEvent(metaInfo map[string]string, rawEvents [][]byte) *Event {
 	return &Event {
-		BaseConfig: config,
-		rawEvents: make([]string, 10),
+		MetaInfo: metaInfo,
+		RawEvents: rawEvents,
 	}
-}
-
-func (e *Event) Add(rawEvent string) {
-	e.rawEvents = append(e.rawEvents, rawEvent)
-}
-
-func (e *Event) RawEvents() []string {
-	return e.rawEvents
 }

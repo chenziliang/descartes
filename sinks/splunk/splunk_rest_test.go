@@ -20,7 +20,7 @@ func TestSplunkRest(t *testing.T) {
 	}
 	splunkURI := "https://localhost:8089"
 
-	sessionKey, err := sr.Login("admin", "admin", splunkURI)
+	sessionKey, err := sr.Login(splunkURI, "admin", "admin")
 	if err != nil {
 		t.Errorf("Failed to get session key from %s, error=%s", splunkURI, err)
 	}

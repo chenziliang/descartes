@@ -20,8 +20,8 @@ type Scheduler struct {
 }
 
 const (
-	WakeupNum int32 = 1
-    TeardownNum int32 = 0
+	wakeupNum int32 = 1
+    teardownNum int32 = 0
 )
 
 func NewScheduler() *Scheduler {
@@ -41,11 +41,11 @@ func (sched *Scheduler) Start() {
 	glog.Info("Scheduler started.")
 }
 
-func (sched *Scheduler) Teardown() {
+func (sched *Scheduler) Stop() {
 	if !atomic.CompareAndSwapInt32(&sched.started, 1, 0) {
 		return
 	}
-	sched.wakeupChan <- TeardownNum
+	sched.wakeupChan <- teardownNum
 	<-sched.doneChan
 	glog.Info("Scheduler exited.")
 }
@@ -101,7 +101,7 @@ func (sched *Scheduler) SetMaxStartDelay(d int) {
 }
 
 func (sched *Scheduler) wakeUp() {
-	sched.wakeupChan <- WakeupNum
+	sched.wakeupChan <- wakeupNum
 }
 
 func (sched *Scheduler) doJobs() {
@@ -113,7 +113,7 @@ func (sched *Scheduler) doJobs() {
 		case <-time.After(sleep_time):
 			continue
 		case v := <-sched.wakeupChan:
-			if v == TeardownNum {
+			if v == teardownNum {
 				break L
 			}
 		}

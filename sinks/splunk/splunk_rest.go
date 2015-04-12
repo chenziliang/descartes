@@ -75,7 +75,7 @@ func (rest SplunkRest) SplunkdRequest(splunkdURI string, sessionKey string,
 	return res, err
 }
 
-func (rest SplunkRest) Login(username, password, splunkdURI string) (string, error) {
+func (rest SplunkRest) Login(splunkdURI, username, password string) (string, error) {
 	data := url.Values{}
 	data.Add("username", username)
 	data.Add("password", password)

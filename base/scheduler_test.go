@@ -70,6 +70,6 @@ func TestScheduler(t *testing.T) {
 	scheduler.AddJobs(jobs)
 	//time.Sleep(1 * time.Hour)
 	time.Sleep(10 * time.Second)
-	scheduler.Teardown()
+	scheduler.Stop()
 	time.Sleep(1 * time.Second)
 }
