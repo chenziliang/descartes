@@ -1,44 +1,42 @@
 package splunk
 
-
 import (
-	"time"
-	"sync/atomic"
 	"crypto/tls"
+	db "github.com/chenziliang/descartes/base"
+	"github.com/golang/glog"
 	"net/http"
 	"net/url"
-	"github.com/golang/glog"
-	db "github.com/chenziliang/descartes/base"
+	"sync/atomic"
+	"time"
 )
 
-
 const (
-	hostKey = "host"
-	hostRegexKey = "host_regex"
-	indexKey = "index"
-	sourceKey = "source"
+	hostKey       = "host"
+	hostRegexKey  = "host_regex"
+	indexKey      = "index"
+	sourceKey     = "source"
 	sourcetypeKey = "sourcetype"
 )
 
 type SplunkEventWriter struct {
 	splunkdCredentials []*db.BaseConfig
-	sessionKeys map[string]string
-	rest SplunkRest
-	eventQ chan *db.Event
-	started int32
+	sessionKeys        map[string]string
+	rest               SplunkRest
+	eventQ             chan *db.Event
+	started            int32
 }
 
 func NewSplunkEventWriter(credentials []*db.BaseConfig) *SplunkEventWriter {
-	tr := &http.Transport {
+	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	client := &http.Client{Transport: tr, Timeout: 120 * time.Second}
 
-	return &SplunkEventWriter {
+	return &SplunkEventWriter{
 		splunkdCredentials: credentials,
-		sessionKeys: make(map[string]string, len(credentials)),
-		rest: SplunkRest{client},
-		eventQ: make(chan *db.Event, 1000),
+		sessionKeys:        make(map[string]string, len(credentials)),
+		rest:               SplunkRest{client},
+		eventQ:             make(chan *db.Event, 1000),
 	}
 }
 
@@ -49,7 +47,7 @@ func (writer *SplunkEventWriter) Start() {
 	}
 
 	go func() {
-        writer.login()
+		writer.login()
 
 		for {
 			event := <-writer.eventQ
@@ -91,12 +89,12 @@ func (writer *SplunkEventWriter) doWriteEvents(events *db.Event) error {
 		data = append(data, '\n')
 	}
 
-	for serverURL, sessionKey := range(writer.sessionKeys) {
-	    err := writer.rest.IndexData(serverURL, sessionKey, &metaProps, data)
-	    if err != nil {
-		    glog.Errorf("Failed to index data from %s, error=%s", serverURL, err)
-		    continue
-	    }
+	for serverURL, sessionKey := range writer.sessionKeys {
+		err := writer.rest.IndexData(serverURL, sessionKey, &metaProps, data)
+		if err != nil {
+			glog.Errorf("Failed to index data from %s, error=%s", serverURL, err)
+			continue
+		}
 		break
 	}
 
@@ -104,7 +102,7 @@ func (writer *SplunkEventWriter) doWriteEvents(events *db.Event) error {
 }
 
 func (writer *SplunkEventWriter) login() error {
-	for _, cred := range(writer.splunkdCredentials) {
+	for _, cred := range writer.splunkdCredentials {
 		sessionKey, err := writer.rest.Login(cred.ServerURL, cred.Username, cred.Password)
 		if err != nil {
 			// FIXME err handling

@@ -1,12 +1,10 @@
 package base
 
-
 import (
+	"fmt"
 	"testing"
 	"time"
-	"fmt"
 )
-
 
 func testLLRB() {
 	n := 1000000
@@ -25,7 +23,7 @@ func testLLRB() {
 			panic("Something is wrong with the llrb")
 		}
 	}
-	fmt.Printf("Delete all mins %d sec\n", time.Now().Unix() - now)
+	fmt.Printf("Delete all mins %d sec\n", time.Now().Unix()-now)
 
 	tree = buildLLRBTree(jobs)
 	now = time.Now().Unix()
@@ -36,22 +34,22 @@ func testLLRB() {
 			panic("Something is wrong with the llrb")
 		}
 	}
-	fmt.Printf("Delete all maxs %d sec\n", time.Now().Unix() - now)
+	fmt.Printf("Delete all maxs %d sec\n", time.Now().Unix()-now)
 
 	tree = buildLLRBTree(jobs)
 	now = time.Now().UnixNano()
 	_ = tree.Max()
-	fmt.Printf("Look for max: %d nano sec\n", time.Now().UnixNano() - now)
+	fmt.Printf("Look for max: %d nano sec\n", time.Now().UnixNano()-now)
 
 	now = time.Now().UnixNano()
 	_ = tree.Min()
-	fmt.Printf("Look for min: %d nano sec\n", time.Now().UnixNano() - now)
+	fmt.Printf("Look for min: %d nano sec\n", time.Now().UnixNano()-now)
 
 	for i := 0; i < 10; i++ {
 		now = time.Now().UnixNano()
-		item := tree.Get(jobs[index + i])
-		fmt.Printf("Look for rand: %d nano sec\n", time.Now().UnixNano() - now)
-		if item.(*Job).Id() != jobs[index + i].Id() {
+		item := tree.Get(jobs[index+i])
+		fmt.Printf("Look for rand: %d nano sec\n", time.Now().UnixNano()-now)
+		if item.(*Job).Id() != jobs[index+i].Id() {
 			panic("Something wrong has happended")
 		}
 	}

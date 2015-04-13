@@ -1,16 +1,14 @@
 package kafka
 
-
 import (
+	db "github.com/chenziliang/descartes/base"
 	"testing"
 	"time"
-	db "github.com/chenziliang/descartes/base"
 )
 
-
 func TestKafkaEventWriter(t *testing.T) {
-	sinkConfig := []*db.BaseConfig {
-		&db.BaseConfig {
+	sinkConfig := []*db.BaseConfig{
+		&db.BaseConfig{
 			ServerURL: "172.16.107.153:9092",
 		},
 	}
@@ -19,9 +17,9 @@ func TestKafkaEventWriter(t *testing.T) {
 	eventWriter.Start()
 	defer eventWriter.Stop()
 
-	metaInfo := map[string]string {
+	metaInfo := map[string]string{
 		"Topic": "DescartesTest",
-		"Key": "MyKey",
+		"Key":   "MyKey",
 	}
 	rawEvents := [][]byte{[]byte("sync:a=b,c=d,1=2,3=4"), []byte("sync:1=2,3=4,a=b,c=d")}
 	event := db.NewEvent(metaInfo, rawEvents)

@@ -5,7 +5,6 @@ import (
 	"github.com/golang/glog"
 )
 
-
 func ToJsonObject(data []byte) (map[string]interface{}, error) {
 	var jobj map[string]interface{}
 	err := json.Unmarshal(data, &jobj)

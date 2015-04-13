@@ -2,11 +2,9 @@ package main
 
 import (
 	"flag"
-	"time"
 	_ "github.com/chenziliang/descartes/base"
+	"time"
 )
-
-
 
 func main() {
 	flag.Parse()

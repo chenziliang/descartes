@@ -1,18 +1,17 @@
 package base
 
 import (
-	"testing"
-	"time"
-	"math/rand"
 	"fmt"
 	"github.com/petar/GoLLRB/llrb"
+	"math/rand"
+	"testing"
+	"time"
 )
-
 
 func test(n int, id int) Func {
 	return func() error {
-	    fmt.Println(fmt.Sprintf("id=%d call every %d second.", id, n))
-	    return nil
+		fmt.Println(fmt.Sprintf("id=%d call every %d second.", id, n))
+		return nil
 	}
 }
 
@@ -21,9 +20,9 @@ func buildLLRBTree(jobs []*Job) *llrb.LLRB {
 
 	tree := llrb.New()
 	for _, job := range jobs {
-	    tree.InsertNoReplace(job)
+		tree.InsertNoReplace(job)
 	}
-	fmt.Printf("Build llrb tree: %d sec\n", time.Now().Unix() - now)
+	fmt.Printf("Build llrb tree: %d sec\n", time.Now().Unix()-now)
 	return tree
 }
 
@@ -36,11 +35,11 @@ func buildJobs(n int) []*Job {
 	s := int64(time.Second)
 	jobs := make([]*Job, 0, n)
 	for i := 0; i < n; i++ {
-		job := NewJob(test(i + 1, i), 0, int64(s * (int64(r.Int()) % 3600 + 1)),
-		                 make(map[string]string))
+		job := NewJob(test(i+1, i), 0, int64(s*(int64(r.Int())%3600+1)),
+			make(map[string]string))
 		jobs = append(jobs, job)
 	}
-	fmt.Printf("Build %d jobs tree: %d sec\n", n, time.Now().UnixNano() - now)
+	fmt.Printf("Build %d jobs tree: %d sec\n", n, time.Now().UnixNano()-now)
 	return jobs
 }
 
@@ -50,12 +49,12 @@ func buildJobsNoRand(n int) []*Job {
 	s := int64(time.Second)
 	jobs := make([]*Job, 0, n)
 	for i := 0; i < n; i++ {
-		interval := i % 3600 + 1
-		job := NewJob(test(interval, i + 1), 0,
-		                 int64(interval) * s, make(map[string]string))
+		interval := i%3600 + 1
+		job := NewJob(test(interval, i+1), 0,
+			int64(interval)*s, make(map[string]string))
 		jobs = append(jobs, job)
 	}
-	fmt.Printf("Build %d jobs tree: %d sec\n", n, time.Now().Unix() - now)
+	fmt.Printf("Build %d jobs tree: %d sec\n", n, time.Now().Unix()-now)
 	return jobs
 }
 

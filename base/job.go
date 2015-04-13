@@ -1,10 +1,10 @@
 package base
 
 import (
-	"sync/atomic"
 	"fmt"
-	"strconv"
 	"github.com/petar/GoLLRB/llrb"
+	"strconv"
+	"sync/atomic"
 )
 
 var jobId int64 = 0
@@ -12,15 +12,14 @@ var jobId int64 = 0
 type Func func() error
 
 type Job struct {
-	f Func
-	when int64 // absolut nano seconds since epoch
+	f        Func
+	when     int64 // absolut nano seconds since epoch
 	interval int64 // nano seconds
-	id string
-	props map[string]string
+	id       string
+	props    map[string]string
 }
 
 type JobList []*Job
-
 
 // JobList implements sort.Interface
 func (jobs JobList) Len() int {
@@ -36,12 +35,12 @@ func (jobs JobList) Less(i, j int) bool {
 }
 
 func NewJob(f Func, when int64, interval int64, props map[string]string) *Job {
-	return &Job {
-		f: f,
-		id: strconv.FormatInt(atomic.AddInt64(&jobId, 1), 10),
-		when: when,
+	return &Job{
+		f:        f,
+		id:       strconv.FormatInt(atomic.AddInt64(&jobId, 1), 10),
+		when:     when,
 		interval: interval,
-		props: props,
+		props:    props,
 	}
 }
 
@@ -58,7 +57,7 @@ func (job *Job) Less(other llrb.Item) bool {
 }
 
 func (job *Job) String() string {
-    return fmt.Sprintf("%d(%s)", job.when, job.id)
+	return fmt.Sprintf("%d(%s)", job.when, job.id)
 }
 
 func (job *Job) Id() string {

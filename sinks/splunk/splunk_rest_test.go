@@ -1,20 +1,18 @@
 package splunk
 
-
 import (
-	"testing"
-	"net/http"
 	"crypto/tls"
+	"net/http"
 	"net/url"
+	"testing"
 )
 
-
 func TestSplunkRest(t *testing.T) {
-	tr := &http.Transport {
+	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	client := &http.Client{Transport: tr}
-	sr := SplunkRest {
+	sr := SplunkRest{
 		client: client,
 	}
 	splunkURI := "https://localhost:8089"

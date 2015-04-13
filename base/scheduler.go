@@ -1,40 +1,39 @@
 package base
 
 import (
+	"github.com/golang/glog"
+	"github.com/petar/GoLLRB/llrb"
+	"math/rand"
 	"sync"
 	"sync/atomic"
 	"time"
-	"math/rand"
-	"github.com/petar/GoLLRB/llrb"
-	"github.com/golang/glog"
 )
 
-
 type Scheduler struct {
-	jobs *llrb.LLRB
+	jobs       *llrb.LLRB
 	wakeupChan chan int32
-	doneChan chan bool
-	started int32
-	maxDelay int // nano second
-	lockGuard sync.Mutex
+	doneChan   chan bool
+	started    int32
+	maxDelay   int // nano second
+	lockGuard  sync.Mutex
 }
 
 const (
-	wakeupNum int32 = 1
-    teardownNum int32 = 0
+	wakeupNum   int32 = 1
+	teardownNum int32 = 0
 )
 
 func NewScheduler() *Scheduler {
-	return &Scheduler {
-		jobs: llrb.New(),
+	return &Scheduler{
+		jobs:       llrb.New(),
 		wakeupChan: make(chan int32, 100),
-		doneChan: make(chan bool, 3),
+		doneChan:   make(chan bool, 3),
 	}
 }
 
 func (sched *Scheduler) Start() {
 	if !atomic.CompareAndSwapInt32(&sched.started, 0, 1) {
-	    glog.Info("Scheduler already started.")
+		glog.Info("Scheduler already started.")
 		return
 	}
 	go sched.doJobs()
@@ -50,7 +49,7 @@ func (sched *Scheduler) Stop() {
 	glog.Info("Scheduler exited.")
 }
 
-func (sched *Scheduler) AddJobs(jobs []* Job) {
+func (sched *Scheduler) AddJobs(jobs []*Job) {
 	sched.lockGuard.Lock()
 	defer sched.lockGuard.Unlock()
 
@@ -58,7 +57,7 @@ func (sched *Scheduler) AddJobs(jobs []* Job) {
 	var r *rand.Rand
 	var d int
 	if sched.maxDelay > 0 {
-	    r = rand.New(rand.NewSource(now))
+		r = rand.New(rand.NewSource(now))
 	}
 
 	for _, job := range jobs {
@@ -76,7 +75,7 @@ func (sched *Scheduler) UpdateJobs(jobs []*Job) {
 	sched.lockGuard.Lock()
 	defer sched.lockGuard.Unlock()
 
-	for _, job := range(jobs) {
+	for _, job := range jobs {
 		sched.jobs.Delete(job)
 		sched.jobs.InsertNoReplace(job)
 	}
@@ -87,7 +86,7 @@ func (sched *Scheduler) RemoveJobs(jobs []*Job) {
 	sched.lockGuard.Lock()
 	defer sched.lockGuard.Unlock()
 
-	for _, job := range(jobs) {
+	for _, job := range jobs {
 		sched.jobs.Delete(job)
 	}
 	sched.wakeUp()
@@ -105,7 +104,7 @@ func (sched *Scheduler) wakeUp() {
 }
 
 func (sched *Scheduler) doJobs() {
-	L:
+L:
 	for {
 		sleep_time, jobs := sched.getReadyJobs()
 		sched.executeJobs(jobs)
@@ -144,7 +143,7 @@ func (sched *Scheduler) getReadyJobs() (sleep_time time.Duration, jobs []*Job) {
 	for _, job := range readyJobs {
 		if job.Interval() > 0 {
 			job.UpdateExpirationTime()
-            sched.jobs.InsertNoReplace(job)
+			sched.jobs.InsertNoReplace(job)
 		}
 	}
 
@@ -157,7 +156,7 @@ func (sched *Scheduler) getReadyJobs() (sleep_time time.Duration, jobs []*Job) {
 }
 
 func (sched *Scheduler) executeJobs(jobs []*Job) {
-	for _, job := range(jobs) {
+	for _, job := range jobs {
 		job.f()
 	}
 }

@@ -1,46 +1,44 @@
 package snow
 
 import (
-	"fmt"
-	"time"
-	"strings"
 	"bytes"
-    "strconv"
-	"errors"
-	"sync/atomic"
-	"net/http"
-	"io/ioutil"
-	"encoding/json"
 	"compress/gzip"
 	"encoding/base64"
-	"github.com/golang/glog"
+	"encoding/json"
+	"errors"
+	"fmt"
 	db "github.com/chenziliang/descartes/base"
+	"github.com/golang/glog"
+	"io/ioutil"
+	"net/http"
+	"strconv"
+	"strings"
+	"sync/atomic"
+	"time"
 )
 
-
 type collectionState struct {
-	Version string
-	NextRecordTime string
+	Version         string
+	NextRecordTime  string
 	LastTimeRecords []string
 }
 
 type SnowDataLoader struct {
 	*db.BaseConfig
-	writer db.EventWriter
-	checkpoint db.Checkpointer
-	collecting int32
+	writer      db.EventWriter
+	checkpoint  db.Checkpointer
+	collecting  int32
 	http_client *http.Client
-	ckKey string
-	state collectionState
+	ckKey       string
+	state       collectionState
 }
 
-
 const (
-	endpointKey = "endpoint"
+	endpointKey       = "endpoint"
 	timestampFieldKey = "timestampField"
 	nextRecordTimeKey = "nextRecordTime"
-	recordCountKey = "recordCount"
-    timeTemplate = "2006-01-02 15:04:05"
+	recordCountKey    = "recordCount"
+	timeTemplate      = "2006-01-02 15:04:05"
 )
 
 // NewSnowDataLoader
@@ -48,8 +46,8 @@ const (
 // "nextRecordTime", "recordCount" key/values
 func NewSnowDataLoader(
 	config *db.BaseConfig, eventWriter db.EventWriter, checkpointer db.Checkpointer) *SnowDataLoader {
-	acquiredConfigs := []string {endpointKey, timestampFieldKey, nextRecordTimeKey}
-	for _, key := range(acquiredConfigs) {
+	acquiredConfigs := []string{endpointKey, timestampFieldKey, nextRecordTimeKey}
+	for _, key := range acquiredConfigs {
 		if _, ok := config.AdditionalConfig[key]; !ok {
 			glog.Errorf("%s is missing. It is required by Snow data collection", key)
 			return nil
@@ -62,13 +60,13 @@ func NewSnowDataLoader(
 	defer encoder.Close()
 	encoder.Write(reader)
 
-	return &SnowDataLoader {
-		BaseConfig: config,
-		writer: eventWriter,
-		checkpoint: checkpointer,
-		collecting: 0,
+	return &SnowDataLoader{
+		BaseConfig:  config,
+		writer:      eventWriter,
+		checkpoint:  checkpointer,
+		collecting:  0,
 		http_client: &http.Client{Timeout: 120 * time.Second},
-		ckKey: writer.String() + "_" + config.AdditionalConfig[endpointKey],
+		ckKey:       writer.String() + "_" + config.AdditionalConfig[endpointKey],
 	}
 }
 
@@ -114,10 +112,10 @@ func (snow *SnowDataLoader) CollectData() ([]byte, error) {
 	defer resp.Body.Close()
 
 	reader, err := gzip.NewReader(resp.Body)
-    if err != nil {
-        glog.Error("Failed to create gzip reader, error=", err)
-        return nil, err
-    }
+	if err != nil {
+		glog.Error("Failed to create gzip reader, error=", err)
+		return nil, err
+	}
 	defer reader.Close()
 
 	body, err := ioutil.ReadAll(reader)
@@ -145,11 +143,11 @@ func (snow *SnowDataLoader) IndexData() error {
 
 	if records, ok := jobj["records"].([]interface{}); ok {
 		records, refreshed := snow.removeCollectedRecords(records)
-		allEvents :=  db.NewEvent(snow.BaseConfig)
+		allEvents := db.NewEvent(snow.BaseConfig)
 		var record []string
 		for i := 0; i < len(records); i++ {
 			record = record[:0]
-			for k, v := range(records[i].(map[string]interface{})) {
+			for k, v := range records[i].(map[string]interface{}) {
 				record = append(record, fmt.Sprintf(`%s="%s"`, k, v))
 			}
 			allEvents.Add(strings.Join(record, ","))
@@ -194,9 +192,9 @@ func (snow *SnowDataLoader) doRemoveRecords(records []interface{}, lastTimeRecor
 	}
 
 	if len(recordsToBeRemoved) > 0 {
-		glog.Info("Last time records: %s with timestamp=%s. " +
-	              "Remove collected records: %s with the same timestamp",
-			      lastTimeRecords, lastRecordTime, recordsToBeRemoved)
+		glog.Info("Last time records: %s with timestamp=%s. "+
+			"Remove collected records: %s with the same timestamp",
+			lastTimeRecords, lastRecordTime, recordsToBeRemoved)
 	}
 	return recordsToBeIndexed
 }
@@ -217,12 +215,12 @@ func (snow *SnowDataLoader) removeCollectedRecords(records []interface{}) ([]int
 	recordsToBeIndexed := snow.doRemoveRecords(records, lastTimeRecords, lastRecordTime)
 
 	refreshed := false
-    recordCount, _ := strconv.Atoi(snow.AdditionalConfig[recordCountKey])
+	recordCount, _ := strconv.Atoi(snow.AdditionalConfig[recordCountKey])
 
 	if len(records) == recordCount {
-	    firstRecord := records[0].(map[string]interface{})
-	    lastRecord := records[len(records) - 1].(map[string]interface{})
-	    timefield := snow.AdditionalConfig[timestampFieldKey]
+		firstRecord := records[0].(map[string]interface{})
+		lastRecord := records[len(records)-1].(map[string]interface{})
+		timefield := snow.AdditionalConfig[timestampFieldKey]
 		if firstRecord[timefield] == lastRecord[timefield] {
 			// Run into a rare situtaion that there are more than recordCount
 			// records with the same timestamp. If this happens, move forward
@@ -251,7 +249,7 @@ func (snow *SnowDataLoader) writeCheckpoint(records []interface{}, refreshed boo
 	}
 
 	timefield := snow.AdditionalConfig[timestampFieldKey]
-	lastRecord, _ := records[len(records) - 1].(map[string]interface{})
+	lastRecord, _ := records[len(records)-1].(map[string]interface{})
 	var maxTimestampRecords []string
 
 	for i := len(records) - 1; i >= 0; i-- {
@@ -263,9 +261,9 @@ func (snow *SnowDataLoader) writeCheckpoint(records []interface{}, refreshed boo
 		}
 	}
 
-	currentState := &collectionState {
-		Version: "1",
-		NextRecordTime: lastRecord[timefield].(string),
+	currentState := &collectionState{
+		Version:         "1",
+		NextRecordTime:  lastRecord[timefield].(string),
 		LastTimeRecords: maxTimestampRecords,
 	}
 

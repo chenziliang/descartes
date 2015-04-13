@@ -1,19 +1,17 @@
 package splunk
 
-
 import (
-	"testing"
 	db "github.com/chenziliang/descartes/base"
+	"testing"
 )
-
 
 func TestSplunkEventWriter(t *testing.T) {
 	serverURL := "https://localhost:8089"
-	sinkConfig := []*db.BaseConfig {
-		&db.BaseConfig {
-		    ServerURL: serverURL,
-		    Username: "admin",
-	        Password: "admin",
+	sinkConfig := []*db.BaseConfig{
+		&db.BaseConfig{
+			ServerURL: serverURL,
+			Username:  "admin",
+			Password:  "admin",
 		},
 	}
 
@@ -22,14 +20,14 @@ func TestSplunkEventWriter(t *testing.T) {
 	writer.Start()
 	defer writer.Stop()
 
-	metaInfo := map[string]string {
-		hostKey: "ghost.com",
-		indexKey: "main",
-		sourceKey: "descartes",
+	metaInfo := map[string]string{
+		hostKey:       "ghost.com",
+		indexKey:      "main",
+		sourceKey:     "descartes",
 		sourcetypeKey: "my:event:test",
 	}
 
-	asyncData := [][]byte {
+	asyncData := [][]byte{
 		[]byte("async:a=b,c=d,e=f,g=h"),
 		[]byte("async:1=2,3=4,5=6,7=8"),
 	}
@@ -39,7 +37,7 @@ func TestSplunkEventWriter(t *testing.T) {
 		t.Errorf("Failed to index data from %s, error=%s", serverURL, err)
 	}
 
-	syncData := [][]byte {
+	syncData := [][]byte{
 		[]byte("sync:a=b,c=d,e=f,g=h"),
 		[]byte("sync:1=2,3=4,5=6,7=8"),
 	}

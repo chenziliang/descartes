@@ -1,30 +1,29 @@
 package kafka
 
-
 import (
 	"fmt"
-	"time"
-	"sync/atomic"
-	"github.com/golang/glog"
 	"github.com/Shopify/sarama"
 	db "github.com/chenziliang/descartes/base"
+	"github.com/golang/glog"
+	"sync/atomic"
+	"time"
 )
 
 type KafkaEventWriter struct {
-	brokers []*db.BaseConfig
+	brokers       []*db.BaseConfig
 	asyncProducer sarama.AsyncProducer
-	syncProducer sarama.SyncProducer
-	state int32
+	syncProducer  sarama.SyncProducer
+	state         int32
 }
 
 const (
-	requireAcksKey = "RequiredAcks"
+	requireAcksKey    = "RequiredAcks"
 	flushFrequencyKey = "FlushFreqency"
-	topicKey = "Topic"
-	keyKey = "Key"
-	stopped = 0
-	initialStarted = 1
-	started = 2
+	topicKey          = "Topic"
+	keyKey            = "Key"
+	stopped           = 0
+	initialStarted    = 1
+	started           = 2
 )
 
 // NewKafaEventWriter
@@ -52,11 +51,11 @@ func NewKafkaEventWriter(brokers []*db.BaseConfig) *KafkaEventWriter {
 		return nil
 	}
 
-	return &KafkaEventWriter {
-		brokers: brokers,
+	return &KafkaEventWriter{
+		brokers:       brokers,
 		asyncProducer: asyncProducer,
-		syncProducer: syncProducer,
-		state: initialStarted,
+		syncProducer:  syncProducer,
+		state:         initialStarted,
 	}
 }
 
@@ -87,11 +86,11 @@ func (writer *KafkaEventWriter) Stop() {
 func (writer *KafkaEventWriter) WriteEventsAsync(events *db.Event) error {
 	siz := len(events.RawEvents)
 	for i := 0; i < siz; i++ {
-	    msg := &sarama.ProducerMessage {
-		    Topic: events.MetaInfo[topicKey],
-		    Key: sarama.StringEncoder(events.MetaInfo[keyKey]),
+		msg := &sarama.ProducerMessage{
+			Topic: events.MetaInfo[topicKey],
+			Key:   sarama.StringEncoder(events.MetaInfo[keyKey]),
 			Value: sarama.StringEncoder(events.RawEvents[i]),
-	    }
+		}
 		writer.asyncProducer.Input() <- msg
 	}
 	return nil
@@ -100,11 +99,11 @@ func (writer *KafkaEventWriter) WriteEventsAsync(events *db.Event) error {
 func (writer *KafkaEventWriter) WriteEventsSync(events *db.Event) error {
 	siz := len(events.RawEvents)
 	for i := 0; i < siz; i++ {
-	    msg := &sarama.ProducerMessage {
-		    Topic: events.MetaInfo[topicKey],
-		    Key: sarama.StringEncoder(events.MetaInfo[keyKey]),
+		msg := &sarama.ProducerMessage{
+			Topic: events.MetaInfo[topicKey],
+			Key:   sarama.StringEncoder(events.MetaInfo[keyKey]),
 			Value: sarama.StringEncoder(events.RawEvents[i]),
-	    }
+		}
 		partition, offset, err := writer.syncProducer.SendMessage(msg)
 		// FIXME retry other brokers when failed ?
 		if err != nil {

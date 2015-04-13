@@ -1,6 +1,5 @@
 package base
 
-
 import (
 	"fmt"
 )
@@ -11,7 +10,6 @@ type EventWriter interface {
 	WriteEventsSync(events *Event) error
 	WriteEventsAsync(events *Event) error
 }
-
 
 type StdoutEventWriter struct {
 }
@@ -32,7 +30,7 @@ func (d *StdoutEventWriter) WriteEventsASync(events *Event) error {
 
 func (d *StdoutEventWriter) doWriteEvents(events *Event) error {
 	for i := 0; i < len(events.RawEvents); i++ {
-	    fmt.Println(events.RawEvents[i])
+		fmt.Println(events.RawEvents[i])
 	}
 	return nil
 }

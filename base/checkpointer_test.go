@@ -1,16 +1,14 @@
 package base
 
-
 import (
-	"testing"
 	"encoding/json"
+	"testing"
 )
-
 
 type person struct {
 	FirstName string
-	LastName string
-	Age int
+	LastName  string
+	Age       int
 }
 
 func TestCheckpointer(t *testing.T) {
@@ -20,13 +18,13 @@ func TestCheckpointer(t *testing.T) {
 		t.Error("GetCheckpoint should error out, but got no error")
 	}
 
-	p := person {
+	p := person{
 		FirstName: "Ken",
-		LastName: "Chen",
-		Age: 30,
+		LastName:  "Chen",
+		Age:       30,
 	}
 
-    marshaled, _ := json.Marshal(p)
+	marshaled, _ := json.Marshal(p)
 	err = ck.WriteCheckpoint("myapp_status", marshaled)
 	if err != nil {
 		t.Errorf("WriteCheckpoint should have no error, but got error=%v", err)
