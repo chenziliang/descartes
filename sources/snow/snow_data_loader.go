@@ -27,10 +27,10 @@ type SnowDataLoader struct {
 	*db.BaseConfig
 	writer      db.EventWriter
 	checkpoint  db.Checkpointer
-	collecting  int32
 	http_client *http.Client
-	ckKey       string
 	state       collectionState
+	ckKey       string
+	collecting  int32
 }
 
 const (
@@ -45,7 +45,7 @@ const (
 // @config.AdditionalConfig: shall contain snow "endpoint", "timestampField"
 // "nextRecordTime", "recordCount" key/values
 func NewSnowDataLoader(
-	config *db.BaseConfig, eventWriter db.EventWriter, checkpointer db.Checkpointer) *SnowDataLoader {
+	config *db.BaseConfig, writer db.EventWriter, checkpointer db.Checkpointer) *SnowDataLoader {
 	acquiredConfigs := []string{endpointKey, timestampFieldKey, nextRecordTimeKey}
 	for _, key := range acquiredConfigs {
 		if _, ok := config.AdditionalConfig[key]; !ok {
@@ -55,18 +55,18 @@ func NewSnowDataLoader(
 	}
 
 	reader := []byte(config.ServerURL)
-	var writer bytes.Buffer
-	encoder := base64.NewEncoder(base64.StdEncoding, &writer)
+	var buf bytes.Buffer
+	encoder := base64.NewEncoder(base64.StdEncoding, &buf)
 	defer encoder.Close()
 	encoder.Write(reader)
 
 	return &SnowDataLoader{
 		BaseConfig:  config,
-		writer:      eventWriter,
+		writer:      writer,
 		checkpoint:  checkpointer,
-		collecting:  0,
 		http_client: &http.Client{Timeout: 120 * time.Second},
-		ckKey:       writer.String() + "_" + config.AdditionalConfig[endpointKey],
+		ckKey:       buf.String() + "_" + config.AdditionalConfig[endpointKey],
+		collecting:  0,
 	}
 }
 
@@ -142,15 +142,17 @@ func (snow *SnowDataLoader) IndexData() error {
 	}
 
 	if records, ok := jobj["records"].([]interface{}); ok {
+		// FIXME metaInfo
+		metaInfo := map[string]string{}
 		records, refreshed := snow.removeCollectedRecords(records)
-		allEvents := db.NewEvent(snow.BaseConfig)
+		allEvents := db.NewEvent(metaInfo, make([][]byte, len(records)))
 		var record []string
 		for i := 0; i < len(records); i++ {
 			record = record[:0]
 			for k, v := range records[i].(map[string]interface{}) {
 				record = append(record, fmt.Sprintf(`%s="%s"`, k, v))
 			}
-			allEvents.Add(strings.Join(record, ","))
+			allEvents.RawEvents = append(allEvents.RawEvents, []byte(strings.Join(record, ",")))
 		}
 
 		if len(records) > 0 {

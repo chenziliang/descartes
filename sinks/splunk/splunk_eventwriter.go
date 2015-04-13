@@ -16,6 +16,7 @@ const (
 	indexKey      = "index"
 	sourceKey     = "source"
 	sourcetypeKey = "sourcetype"
+	syncWriteKey  = "writeSync"
 )
 
 type SplunkEventWriter struct {
@@ -63,6 +64,14 @@ func (writer *SplunkEventWriter) Start() {
 
 func (writer *SplunkEventWriter) Stop() {
 	writer.eventQ <- nil
+}
+
+func (writer *SplunkEventWriter) WriteEvents(events *db.Event) error {
+	if writer.splunkdCredentials[0].AdditionalConfig[syncWriteKey] == "1" {
+		return writer.WriteEventsSync(events)
+	} else {
+		return writer.WriteEventsAsync(events)
+	}
 }
 
 func (writer *SplunkEventWriter) WriteEventsAsync(events *db.Event) error {

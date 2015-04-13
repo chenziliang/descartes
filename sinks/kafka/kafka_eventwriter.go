@@ -78,7 +78,6 @@ func (writer *KafkaEventWriter) Stop() {
 		return
 	}
 
-	writer.state = stopped
 	writer.syncProducer.Close()
 	writer.asyncProducer.AsyncClose()
 }
