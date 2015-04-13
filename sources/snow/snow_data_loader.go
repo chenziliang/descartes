@@ -115,8 +115,8 @@ func (snow *SnowDataLoader) CollectData() ([]byte, error) {
 
 	reader, err := gzip.NewReader(resp.Body)
     if err != nil {
-		glog.Error("Failed to create gzip reader, error=", err)
-		return nil, err
+        glog.Error("Failed to create gzip reader, error=", err)
+        return nil, err
     }
 	defer reader.Close()
 
