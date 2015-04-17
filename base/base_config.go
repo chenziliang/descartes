@@ -10,14 +10,14 @@ type BaseConfig struct {
 	AdditionalConfig map[string]string
 }
 
-type Event struct {
-	MetaInfo  map[string]string
-	RawEvents [][]byte
+type Data struct {
+	MetaInfo map[string]string
+	RawData  [][]byte
 }
 
-func NewEvent(metaInfo map[string]string, rawEvents [][]byte) *Event {
-	return &Event{
-		MetaInfo:  metaInfo,
-		RawEvents: rawEvents,
+func NewData(metaInfo map[string]string, rawData [][]byte) *Data {
+	return &Data{
+		MetaInfo: metaInfo,
+		RawData:  rawData,
 	}
 }

@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func TestSnowDataLoader(t *testing.T) {
+func TestSnowDataReader(t *testing.T) {
 	additionalConfig := map[string]string{
 		"endpoint":       "incident",
 		"timestampField": "sys_updated_on",
@@ -21,11 +21,11 @@ func TestSnowDataLoader(t *testing.T) {
 		AdditionalConfig: additionalConfig,
 	}
 
-	writer := &db.StdoutEventWriter{}
+	writer := &db.StdoutDataWriter{}
 	ck := db.NewFileCheckpointer(".", "test")
 	writer.Start()
-	dataLoader := NewSnowDataLoader(sourceConfig, writer, ck)
-	dataLoader.IndexData()
+	dataReader := NewSnowDataReader(sourceConfig, writer, ck)
+	dataReader.IndexData()
 	writer.Stop()
 	time.Sleep(3 * time.Second)
 }

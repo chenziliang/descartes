@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-type KafkaEventWriter struct {
+type KafkaDataWriter struct {
 	brokers       []*db.BaseConfig
 	asyncProducer sarama.AsyncProducer
 	syncProducer  sarama.SyncProducer
@@ -26,10 +26,10 @@ const (
 	started           = 2
 )
 
-// NewKafaEventWriter
+// NewKafaDataWriter
 // @BaseConfig.AdditionalConfig: contains flushFrequency
 // FIXME support more config options
-func NewKafkaEventWriter(brokers []*db.BaseConfig) *KafkaEventWriter {
+func NewKafkaDataWriter(brokers []*db.BaseConfig) *KafkaDataWriter {
 	config := sarama.NewConfig()
 	config.Producer.RequiredAcks = sarama.WaitForLocal
 	config.Producer.Flush.Frequency = 500 * time.Millisecond
@@ -51,7 +51,7 @@ func NewKafkaEventWriter(brokers []*db.BaseConfig) *KafkaEventWriter {
 		return nil
 	}
 
-	return &KafkaEventWriter{
+	return &KafkaDataWriter{
 		brokers:       brokers,
 		asyncProducer: asyncProducer,
 		syncProducer:  syncProducer,
@@ -59,9 +59,9 @@ func NewKafkaEventWriter(brokers []*db.BaseConfig) *KafkaEventWriter {
 	}
 }
 
-func (writer *KafkaEventWriter) Start() {
+func (writer *KafkaDataWriter) Start() {
 	if !atomic.CompareAndSwapInt32(&writer.state, initialStarted, started) {
-		glog.Info("KafkaEventWriter already started or stopped")
+		glog.Info("KafkaDataWriter already started or stopped")
 		return
 	}
 
@@ -72,9 +72,9 @@ func (writer *KafkaEventWriter) Start() {
 	}()
 }
 
-func (writer *KafkaEventWriter) Stop() {
+func (writer *KafkaDataWriter) Stop() {
 	if !atomic.CompareAndSwapInt32(&writer.state, started, stopped) {
-		glog.Info("KafkaEventWriter already stopped")
+		glog.Info("KafkaDataWriter already stopped")
 		return
 	}
 
@@ -82,31 +82,31 @@ func (writer *KafkaEventWriter) Stop() {
 	writer.asyncProducer.AsyncClose()
 }
 
-func (writer *KafkaEventWriter) WriteEventsAsync(events *db.Event) error {
-	siz := len(events.RawEvents)
+func (writer *KafkaDataWriter) WriteDataAsync(data *db.Data) error {
+	siz := len(data.RawData)
 	for i := 0; i < siz; i++ {
 		msg := &sarama.ProducerMessage{
-			Topic: events.MetaInfo[topicKey],
-			Key:   sarama.StringEncoder(events.MetaInfo[keyKey]),
-			Value: sarama.StringEncoder(events.RawEvents[i]),
+			Topic: data.MetaInfo[topicKey],
+			Key:   sarama.StringEncoder(data.MetaInfo[keyKey]),
+			Value: sarama.StringEncoder(data.RawData[i]),
 		}
 		writer.asyncProducer.Input() <- msg
 	}
 	return nil
 }
 
-func (writer *KafkaEventWriter) WriteEventsSync(events *db.Event) error {
-	siz := len(events.RawEvents)
+func (writer *KafkaDataWriter) WriteDataSync(data *db.Data) error {
+	siz := len(data.RawData)
 	for i := 0; i < siz; i++ {
 		msg := &sarama.ProducerMessage{
-			Topic: events.MetaInfo[topicKey],
-			Key:   sarama.StringEncoder(events.MetaInfo[keyKey]),
-			Value: sarama.StringEncoder(events.RawEvents[i]),
+			Topic: data.MetaInfo[topicKey],
+			Key:   sarama.StringEncoder(data.MetaInfo[keyKey]),
+			Value: sarama.StringEncoder(data.RawData[i]),
 		}
 		partition, offset, err := writer.syncProducer.SendMessage(msg)
 		// FIXME retry other brokers when failed ?
 		if err != nil {
-			glog.Errorf("Failed to write events to kafka for topic=%s, key=%s, error=%s", msg.Topic, msg.Key, err)
+			glog.Errorf("Failed to write data to kafka for topic=%s, key=%s, error=%s", msg.Topic, msg.Key, err)
 		}
 		fmt.Printf("partition=%d, offset=%d\n", partition, offset)
 	}

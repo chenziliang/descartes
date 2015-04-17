@@ -23,9 +23,9 @@ type collectionState struct {
 	LastTimeRecords []string
 }
 
-type SnowDataLoader struct {
+type SnowDataReader struct {
 	*db.BaseConfig
-	writer      db.EventWriter
+	writer      db.DataWriter
 	checkpoint  db.Checkpointer
 	http_client *http.Client
 	state       collectionState
@@ -41,11 +41,11 @@ const (
 	timeTemplate      = "2006-01-02 15:04:05"
 )
 
-// NewSnowDataLoader
+// NewSnowDataReader
 // @config.AdditionalConfig: shall contain snow "endpoint", "timestampField"
 // "nextRecordTime", "recordCount" key/values
-func NewSnowDataLoader(
-	config *db.BaseConfig, writer db.EventWriter, checkpointer db.Checkpointer) *SnowDataLoader {
+func NewSnowDataReader(
+	config *db.BaseConfig, writer db.DataWriter, checkpointer db.Checkpointer) *SnowDataReader {
 	acquiredConfigs := []string{endpointKey, timestampFieldKey, nextRecordTimeKey}
 	for _, key := range acquiredConfigs {
 		if _, ok := config.AdditionalConfig[key]; !ok {
@@ -60,7 +60,7 @@ func NewSnowDataLoader(
 	defer encoder.Close()
 	encoder.Write(reader)
 
-	return &SnowDataLoader{
+	return &SnowDataReader{
 		BaseConfig:  config,
 		writer:      writer,
 		checkpoint:  checkpointer,
@@ -70,7 +70,7 @@ func NewSnowDataLoader(
 	}
 }
 
-func (snow *SnowDataLoader) getURL() string {
+func (snow *SnowDataReader) getURL() string {
 	nextRecordTime := snow.getNextRecordTime()
 	var buffer bytes.Buffer
 	buffer.WriteString(snow.ServerURL)
@@ -86,7 +86,7 @@ func (snow *SnowDataLoader) getURL() string {
 	return buffer.String()
 }
 
-func (snow *SnowDataLoader) CollectData() ([]byte, error) {
+func (snow *SnowDataReader) CollectData() ([]byte, error) {
 	if !atomic.CompareAndSwapInt32(&snow.collecting, 0, 1) {
 		glog.Info("Last data collection for %s has not been done", snow.getURL())
 		return nil, nil
@@ -126,7 +126,7 @@ func (snow *SnowDataLoader) CollectData() ([]byte, error) {
 	return body, nil
 }
 
-func (snow *SnowDataLoader) IndexData() error {
+func (snow *SnowDataReader) IndexData() error {
 	data, err := snow.CollectData()
 	if err != nil {
 		return err
@@ -145,18 +145,18 @@ func (snow *SnowDataLoader) IndexData() error {
 		// FIXME metaInfo
 		metaInfo := map[string]string{}
 		records, refreshed := snow.removeCollectedRecords(records)
-		allEvents := db.NewEvent(metaInfo, make([][]byte, len(records)))
+		allData := db.NewData(metaInfo, make([][]byte, len(records)))
 		var record []string
 		for i := 0; i < len(records); i++ {
 			record = record[:0]
 			for k, v := range records[i].(map[string]interface{}) {
 				record = append(record, fmt.Sprintf(`%s="%s"`, k, v))
 			}
-			allEvents.RawEvents = append(allEvents.RawEvents, []byte(strings.Join(record, ",")))
+			allData.RawData = append(allData.RawData, []byte(strings.Join(record, ",")))
 		}
 
 		if len(records) > 0 {
-			err := snow.writer.WriteEvents(allEvents)
+			err := snow.writer.WriteData(allData)
 			if err != nil {
 				return err
 			}
@@ -169,7 +169,8 @@ func (snow *SnowDataLoader) IndexData() error {
 	return nil
 }
 
-func (snow *SnowDataLoader) doRemoveRecords(records []interface{}, lastTimeRecords map[string]bool, lastRecordTime string) []interface{} {
+func (snow *SnowDataReader) doRemoveRecords(records []interface{}, lastTimeRecords map[string]bool,
+	lastRecordTime string) []interface{} {
 	var recordsToBeRemoved []string
 	var recordsToBeIndexed []interface{}
 	timefield := snow.AdditionalConfig[timestampFieldKey]
@@ -201,7 +202,7 @@ func (snow *SnowDataLoader) doRemoveRecords(records []interface{}, lastTimeRecor
 	return recordsToBeIndexed
 }
 
-func (snow *SnowDataLoader) removeCollectedRecords(records []interface{}) ([]interface{}, bool) {
+func (snow *SnowDataReader) removeCollectedRecords(records []interface{}) ([]interface{}, bool) {
 	ck := snow.getCheckpoint()
 	// FIXME check nullness of ck for error
 	if ck == nil || len(ck.LastTimeRecords) == 0 || len(records) == 0 {
@@ -245,7 +246,7 @@ func (snow *SnowDataLoader) removeCollectedRecords(records []interface{}) ([]int
 	return recordsToBeIndexed, refreshed
 }
 
-func (snow *SnowDataLoader) writeCheckpoint(records []interface{}, refreshed bool) error {
+func (snow *SnowDataReader) writeCheckpoint(records []interface{}, refreshed bool) error {
 	if len(records) == 0 {
 		return nil
 	}
@@ -286,7 +287,7 @@ func (snow *SnowDataLoader) writeCheckpoint(records []interface{}, refreshed boo
 	return nil
 }
 
-func (snow *SnowDataLoader) getCheckpoint() *collectionState {
+func (snow *SnowDataReader) getCheckpoint() *collectionState {
 	if snow.state.NextRecordTime != "" {
 		return &snow.state
 	}
@@ -310,7 +311,7 @@ func (snow *SnowDataLoader) getCheckpoint() *collectionState {
 	return &currentState
 }
 
-func (snow *SnowDataLoader) getNextRecordTime() string {
+func (snow *SnowDataReader) getNextRecordTime() string {
 	state := snow.getCheckpoint()
 	if state == nil {
 		glog.Info("Checkpoint not found, use intial configuration")

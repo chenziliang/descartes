@@ -16,34 +16,34 @@ const (
 	indexKey      = "index"
 	sourceKey     = "source"
 	sourcetypeKey = "sourcetype"
-	syncWriteKey  = "writeSync"
+	syncWriteKey  = "syncWrite"
 )
 
-type SplunkEventWriter struct {
+type SplunkDataWriter struct {
 	splunkdCredentials []*db.BaseConfig
 	sessionKeys        map[string]string
 	rest               SplunkRest
-	eventQ             chan *db.Event
+	dataQ              chan *db.Data
 	started            int32
 }
 
-func NewSplunkEventWriter(credentials []*db.BaseConfig) *SplunkEventWriter {
+func NewSplunkDataWriter(credentials []*db.BaseConfig) *SplunkDataWriter {
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	client := &http.Client{Transport: tr, Timeout: 120 * time.Second}
 
-	return &SplunkEventWriter{
+	return &SplunkDataWriter{
 		splunkdCredentials: credentials,
 		sessionKeys:        make(map[string]string, len(credentials)),
 		rest:               SplunkRest{client},
-		eventQ:             make(chan *db.Event, 1000),
+		dataQ:              make(chan *db.Data, 1000),
 	}
 }
 
-func (writer *SplunkEventWriter) Start() {
+func (writer *SplunkDataWriter) Start() {
 	if !atomic.CompareAndSwapInt32(&writer.started, 0, 1) {
-		glog.Info("SplunkEventWriter already started")
+		glog.Info("SplunkDataWriter already started")
 		return
 	}
 
@@ -51,55 +51,55 @@ func (writer *SplunkEventWriter) Start() {
 		writer.login()
 
 		for {
-			event := <-writer.eventQ
-			if event != nil {
-				writer.doWriteEvents(event)
+			data := <-writer.dataQ
+			if data != nil {
+				writer.doWriteData(data)
 			} else {
 				break
 			}
 		}
-		glog.Info("SplunkEventWriter is going to exit...")
+		glog.Info("SplunkDataWriter is going to exit...")
 	}()
 }
 
-func (writer *SplunkEventWriter) Stop() {
-	writer.eventQ <- nil
+func (writer *SplunkDataWriter) Stop() {
+	writer.dataQ <- nil
 }
 
-func (writer *SplunkEventWriter) WriteEvents(events *db.Event) error {
+func (writer *SplunkDataWriter) WriteData(data *db.Data) error {
 	if writer.splunkdCredentials[0].AdditionalConfig[syncWriteKey] == "1" {
-		return writer.WriteEventsSync(events)
+		return writer.WriteDataSync(data)
 	} else {
-		return writer.WriteEventsAsync(events)
+		return writer.WriteDataAsync(data)
 	}
 }
 
-func (writer *SplunkEventWriter) WriteEventsAsync(events *db.Event) error {
-	writer.eventQ <- events
+func (writer *SplunkDataWriter) WriteDataAsync(data *db.Data) error {
+	writer.dataQ <- data
 	return nil
 }
 
-func (writer *SplunkEventWriter) WriteEventsSync(events *db.Event) error {
-	return writer.doWriteEvents(events)
+func (writer *SplunkDataWriter) WriteDataSync(data *db.Data) error {
+	return writer.doWriteData(data)
 }
 
-func (writer *SplunkEventWriter) doWriteEvents(events *db.Event) error {
+func (writer *SplunkDataWriter) doWriteData(data *db.Data) error {
 	metaProps := url.Values{}
-	metaProps.Add(hostKey, events.MetaInfo[hostKey])
-	metaProps.Add(indexKey, events.MetaInfo[indexKey])
-	metaProps.Add(sourceKey, events.MetaInfo[sourceKey])
-	metaProps.Add(sourcetypeKey, events.MetaInfo[sourcetypeKey])
+	metaProps.Add(hostKey, data.MetaInfo[hostKey])
+	metaProps.Add(indexKey, data.MetaInfo[indexKey])
+	metaProps.Add(sourceKey, data.MetaInfo[sourceKey])
+	metaProps.Add(sourcetypeKey, data.MetaInfo[sourcetypeKey])
 
 	// FIXME perf issue for bytes concatenation
-	data := make([]byte, 0, 4096)
-	n := len(events.RawEvents)
+	allData := make([]byte, 0, 4096)
+	n := len(data.RawData)
 	for i := 0; i < n; i++ {
-		data = append(data, events.RawEvents[i]...)
-		data = append(data, '\n')
+		allData = append(allData, data.RawData[i]...)
+		allData = append(allData, '\n')
 	}
 
 	for serverURL, sessionKey := range writer.sessionKeys {
-		err := writer.rest.IndexData(serverURL, sessionKey, &metaProps, data)
+		err := writer.rest.IndexData(serverURL, sessionKey, &metaProps, allData)
 		if err != nil {
 			glog.Errorf("Failed to index data from %s, error=%s", serverURL, err)
 			continue
@@ -110,7 +110,7 @@ func (writer *SplunkEventWriter) doWriteEvents(events *db.Event) error {
 	return nil
 }
 
-func (writer *SplunkEventWriter) login() error {
+func (writer *SplunkDataWriter) login() error {
 	for _, cred := range writer.splunkdCredentials {
 		sessionKey, err := writer.rest.Login(cred.ServerURL, cred.Username, cred.Password)
 		if err != nil {
