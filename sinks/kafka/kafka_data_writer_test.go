@@ -17,15 +17,18 @@ func TestKafkaDataWriter(t *testing.T) {
 	writer.Start()
 	defer writer.Stop()
 
-	metaInfo := map[string]string{
-		"Topic": "DescartesTest",
-		"Key":   "MyKey",
+	for i := 0; i < 3; i++ {
+		metaInfo := map[string]string{
+			"Topic": "DescartesTest",
+			"Key":   "MyKey",
+		}
+		rawData := [][]byte{[]byte("sync:a=b,c=d,1=2,3=4"), []byte("sync:1=2,3=4,a=b,c=d")}
+		data := db.NewData(metaInfo, rawData)
+		asyncrawData := [][]byte{[]byte("aysnc:a=b,c=d,1=2,3=4"), []byte("aysnc:1=2,3=4,a=b,c=d")}
+		asyncData := db.NewData(metaInfo, asyncrawData)
+		writer.WriteDataSync(data)
+		writer.WriteDataAsync(asyncData)
+		time.Sleep(time.Second)
 	}
-	rawData := [][]byte{[]byte("sync:a=b,c=d,1=2,3=4"), []byte("sync:1=2,3=4,a=b,c=d")}
-	data := db.NewData(metaInfo, rawData)
-	asyncrawData := [][]byte{[]byte("aysnc:a=b,c=d,1=2,3=4"), []byte("aysnc:1=2,3=4,a=b,c=d")}
-	asyncData := db.NewData(metaInfo, asyncrawData)
-	writer.WriteDataSync(data)
-	writer.WriteDataAsync(asyncData)
 	time.Sleep(time.Second)
 }

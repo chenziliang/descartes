@@ -2,87 +2,95 @@ package kafka
 
 import (
 	// "strconv"
+	"encoding/json"
+	"fmt"
 	"github.com/Shopify/sarama"
 	db "github.com/chenziliang/descartes/base"
 	"github.com/golang/glog"
 	"sync/atomic"
+	"time"
 )
 
 type collectionState struct {
-	Version string
-	Topic   string
-	Offset  uint64
+	Version       string
+	ConsumerGroup string
+	Topic         string
+	Partition     int32
+	Offset        int64
 }
 
 type KafkaDataReaderConfig struct {
-	TopicsAndPartitions map[string][]int32
-	AdditionalConfig    map[string]string
+	ConsumerGroup string
+	Topic         string
+	Partition     int32
 }
 
 type KafkaDataReader struct {
-	client             sarama.Client
-	writer             db.DataWriter
-	checkpoint         db.Checkpointer
-	master             sarama.Consumer
-	partitionConsumers []sarama.PartitionConsumer
-	state              collectionState
-	config             KafkaDataReaderConfig
-	collecting         int32
+	client            *db.KafkaClient
+	writer            db.DataWriter
+	checkpoint        db.Checkpointer
+	master            sarama.Consumer
+	partitionConsumer sarama.PartitionConsumer
+	state             collectionState
+	config            KafkaDataReaderConfig
+	collecting        int32
 }
 
 const (
-	consumerGroupKey = "ConsumerGroup"
-	stopped          = 0
-	initialStarted   = 1
-	started          = 2
+	stopped        = 0
+	initialStarted = 1
+	started        = 2
+	maxRetry       = 16
 )
 
 // NewKafaDataReader
 // FIXME support more config options
-func NewKafkaDataReader(client sarama.Client, readerConfig KafkaDataReaderConfig, writer db.DataWriter,
+func NewKafkaDataReader(client *db.KafkaClient, readerConfig KafkaDataReaderConfig, writer db.DataWriter,
 	checkpoint db.Checkpointer) *KafkaDataReader {
 	config := sarama.NewConfig()
 	config.Consumer.Return.Errors = true
 
-	master, err := sarama.NewConsumerFromClient(client)
+	topic, partition := readerConfig.Topic, readerConfig.Partition
+	master, err := sarama.NewConsumerFromClient(client.Client())
 	if err != nil {
 		glog.Errorf("Failed to create Kafka consumer, error=%s", err)
 		return nil
 	}
+	defer func() {
+		if err != nil {
+			master.Close()
+		}
+	}()
 
-	// FIXME consumer groups
-	offsets, err := getOffsetForPartitions(client, readerConfig.AdditionalConfig[consumerGroupKey],
-		readerConfig.TopicsAndPartitions)
+	offset, err := client.GetPartitionOffset(readerConfig.ConsumerGroup, topic, partition)
 	if err != nil {
 		return nil
 	}
+	fmt.Println(fmt.Sprintf("Get offset=%d for consumer group=%s, topic=%s, partition=%d,", offset, readerConfig.ConsumerGroup, readerConfig.Topic, readerConfig.Partition))
 
-	consumers := make([]sarama.PartitionConsumer, 0, len(readerConfig.TopicsAndPartitions))
-	for topic, partitions := range readerConfig.TopicsAndPartitions {
-		for _, partition := range partitions {
-			consumer, err := master.ConsumePartition(topic, partition, offsets[topic][partition])
-			if err != nil {
-				glog.Errorf("Failed to create Kafka partition consumer for topic=%s, partition=%d, error=%s",
-					topic, partition, err)
-				// FIXME
-				continue
-			}
-			consumers = append(consumers, consumer)
-		}
-	}
-
-	if len(consumers) == 0 {
+	consumer, err := master.ConsumePartition(topic, partition, offset)
+	if err != nil {
+		glog.Errorf("Failed to create Kafka partition consumer for topic=%s, partition=%d, error=%s", topic, partition, err)
 		return nil
 	}
 
+	state := collectionState{
+		Version:       "1",
+		ConsumerGroup: readerConfig.ConsumerGroup,
+		Topic:         topic,
+		Partition:     partition,
+		Offset:        offset,
+	}
+
 	return &KafkaDataReader{
-		client:             client,
-		writer:             writer,
-		checkpoint:         checkpoint,
-		master:             master,
-		partitionConsumers: consumers,
-		config:             readerConfig,
-		collecting:         initialStarted,
+		client:            client,
+		writer:            writer,
+		checkpoint:        checkpoint,
+		master:            master,
+		partitionConsumer: consumer,
+		state:             state,
+		config:            readerConfig,
+		collecting:        initialStarted,
 	}
 }
 
@@ -92,19 +100,17 @@ func (reader *KafkaDataReader) Start() {
 		return
 	}
 
-	for i, _ := range reader.partitionConsumers {
-		go func() {
-			for {
-				for err := range reader.partitionConsumers[i].Errors() {
-					glog.Errorf("Encounter error while collecting data, error=%s", err)
-				}
-
-				if atomic.LoadInt32(&reader.collecting) == stopped {
-					break
-				}
+	go func() {
+		for {
+			for err := range reader.partitionConsumer.Errors() {
+				glog.Errorf("Encounter error while collecting data, error=%s", err)
 			}
-		}()
-	}
+
+			if atomic.LoadInt32(&reader.collecting) == stopped {
+				break
+			}
+		}
+	}()
 }
 
 func (reader *KafkaDataReader) Stop() {
@@ -113,9 +119,8 @@ func (reader *KafkaDataReader) Stop() {
 		return
 	}
 	reader.master.Close()
-	for _, consumer := range reader.partitionConsumers {
-		consumer.AsyncClose()
-	}
+
+	reader.partitionConsumer.AsyncClose()
 }
 
 func (reader *KafkaDataReader) CollectData() ([]byte, error) {
@@ -123,71 +128,74 @@ func (reader *KafkaDataReader) CollectData() ([]byte, error) {
 }
 
 func (reader *KafkaDataReader) IndexData() error {
-	for msg := range reader.partitionConsumers[0].Messages() {
-		// FIXME write offset
+	for msg := range reader.partitionConsumer.Messages() {
 		metaInfo := map[string]string{}
 		data := db.NewData(metaInfo, [][]byte{msg.Value})
-		reader.writer.WriteData(data)
+		reader.writeData(msg.Topic, msg.Partition, msg.Offset, data)
+		reader.saveOffset(msg.Offset)
 	}
 	return nil
 }
 
-func getOffsetForPartitions(client sarama.Client, consumerGroup string,
-	topicsAndPartitions map[string][]int32) (map[string]map[int32]int64, error) {
-	offsets := make(map[string]map[int32]int64, len(topicsAndPartitions))
-	if consumerGroup == "" {
-		// Use oldest
-		for topic, partitions := range topicsAndPartitions {
-			_, ok := offsets[topic]
-			if !ok {
-				offsets[topic] = make(map[int32]int64)
-			}
-
-			for _, partition := range partitions {
-				offsets[topic][partition] = sarama.OffsetOldest
-			}
+func (reader *KafkaDataReader) writeData(topic string, partition int32, offset int64, data *db.Data) {
+	var err error
+	for i := 0; i < maxRetry; i++ {
+		err = reader.writer.WriteData(data)
+		if err != nil {
+			glog.Errorf("Failed to write data for topic=%s, partition=%d, offset=%d, error=%s", topic, partition, offset, err)
+			time.Sleep(time.Second)
+		} else {
+			break
 		}
-		return offsets, nil
 	}
 
-	// 1. Use consumerGroup to get the offset coordinator broker
-	// 2. Talk to the coordinator to get the current offset for consumerGroup
-	coordinator, err := client.Coordinator(consumerGroup)
 	if err != nil {
-		glog.Errorf("Failed to get coordinator for consumer group=%s, error=%s", consumerGroup, err)
-		return nil, err
+		panic(fmt.Sprintf("Failed to write data for topic=%s, partition=%d, offset=%d", topic, partition, offset))
+	}
+}
+
+func (reader *KafkaDataReader) saveOffset(offset int64) {
+	var newState collectionState = reader.state
+	newState.Offset = offset
+	if newState.ConsumerGroup == "" {
+		// FIXME generate one
+		newState.ConsumerGroup = "generatedOne"
+	}
+	errMsg := fmt.Sprintf("Failed to marshal/write checkpoint for consumer group=%s, topic=%s, parition=%s, offset=%s", newState.ConsumerGroup, newState.Topic, newState.Partition, offset)
+
+	var i int
+	for i = 0; i < maxRetry; i++ {
+		data, err := json.Marshal(&newState)
+		if err != nil {
+			glog.Errorf(errMsg)
+			continue
+		}
+		key := fmt.Sprintf("%s_%s_%d", newState.ConsumerGroup, newState.Topic, newState.Partition)
+		err = reader.checkpoint.WriteCheckpoint(map[string]string{"key": key}, data)
+		if err != nil {
+			glog.Errorf(errMsg)
+		} else {
+			break
+		}
 	}
 
-	req := sarama.OffsetFetchRequest{
-		ConsumerGroup: consumerGroup,
+	if i == maxRetry {
+		panic(fmt.Sprintf(errMsg))
+	}
+
+	broker, err := reader.client.Client().Leader(newState.Topic, newState.Partition)
+	if err != nil {
+		glog.Errorf("Failed to get leader for topic=%s, partition=%s, reason=%s", newState.Topic, newState.Partition, err)
+	}
+
+	req := &sarama.OffsetCommitRequest{
+		ConsumerGroup: newState.ConsumerGroup,
 		Version:       1,
 	}
-
-	for topic, partitions := range topicsAndPartitions {
-		for _, partition := range partitions {
-			req.AddPartition(topic, partition)
-		}
-	}
-
-	resp, err := coordinator.FetchOffset(&req)
+	req.AddBlock(newState.Topic, newState.Partition, offset, time.Now().UnixNano(), "")
+	resp, err := broker.CommitOffset(req)
+	fmt.Println(fmt.Sprintf("Commit offset=%d for consumer group=%s, topic=%s, partition=%d,", offset, newState.ConsumerGroup, newState.Topic, newState.Partition))
 	if err != nil {
-		return nil, err
+		glog.Errorf("Failed to commit offset for topic=%s, partition=%s, reason=%s,%s", newState.Topic, newState.Partition, err, resp)
 	}
-
-	for topic, data := range resp.Blocks {
-		_, ok := offsets[topic]
-		if !ok {
-			offsets[topic] = make(map[int32]int64)
-		}
-
-		for partition, block := range data {
-			if block.Err != sarama.ErrNoError {
-				glog.Errorf("Failed to get offset for consumer group=%s, topic=%s, partition=%s, error=%d",
-					consumerGroup, topic, partition, block.Err)
-				continue
-			}
-			offsets[topic][partition] = block.Offset
-		}
-	}
-	return offsets, nil
 }
