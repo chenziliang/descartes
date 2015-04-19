@@ -10,7 +10,7 @@ import (
 
 func test(n int, id int) Func {
 	return func() error {
-		fmt.Println(fmt.Sprintf("id=%d call every %d second.", id, n))
+		// fmt.Println(fmt.Sprintf("id=%d call every %d second.", id, n))
 		return nil
 	}
 }

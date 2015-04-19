@@ -29,7 +29,7 @@ type SnowDataReader struct {
 	checkpoint  db.Checkpointer
 	http_client *http.Client
 	state       collectionState
-	ckKey       string
+	ckKey       map[string]string
 	collecting  int32
 }
 
@@ -60,12 +60,13 @@ func NewSnowDataReader(
 	defer encoder.Close()
 	encoder.Write(reader)
 
+	keyInfo := map[string]string{"Key": buf.String() + "_" + config.AdditionalConfig[endpointKey]}
 	return &SnowDataReader{
 		BaseConfig:  config,
 		writer:      writer,
 		checkpoint:  checkpointer,
 		http_client: &http.Client{Timeout: 120 * time.Second},
-		ckKey:       buf.String() + "_" + config.AdditionalConfig[endpointKey],
+		ckKey:       keyInfo,
 		collecting:  0,
 	}
 }
@@ -315,7 +316,7 @@ func (snow *SnowDataReader) getNextRecordTime() string {
 	state := snow.getCheckpoint()
 	if state == nil {
 		glog.Info("Checkpoint not found, use intial configuration")
-		snow.state.NextRecordTime = snow.AdditionalConfig["nextTimestamp"]
+		snow.state.NextRecordTime = snow.AdditionalConfig[nextRecordTimeKey]
 	}
 	return strings.Replace(snow.state.NextRecordTime, " ", "+", 1)
 }

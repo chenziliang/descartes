@@ -26,6 +26,7 @@ func TestSnowDataReader(t *testing.T) {
 	writer.Start()
 	dataReader := NewSnowDataReader(sourceConfig, writer, ck)
 	dataReader.IndexData()
+	time.Sleep(10 * time.Second)
 	writer.Stop()
-	time.Sleep(3 * time.Second)
+	time.Sleep(time.Second)
 }

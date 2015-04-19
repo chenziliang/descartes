@@ -1,7 +1,7 @@
 package kafka
 
 import (
-	"fmt"
+	"encoding/json"
 	"github.com/Shopify/sarama"
 	db "github.com/chenziliang/descartes/base"
 	"github.com/golang/glog"
@@ -21,6 +21,7 @@ const (
 	flushFrequencyKey = "FlushFreqency"
 	topicKey          = "Topic"
 	keyKey            = "Key"
+	syncWriteKey      = "syncWrite"
 	stopped           = 0
 	initialStarted    = 1
 	started           = 2
@@ -29,7 +30,7 @@ const (
 // NewKafaDataWriter
 // @BaseConfig.AdditionalConfig: contains flushFrequency
 // FIXME support more config options
-func NewKafkaDataWriter(brokers []*db.BaseConfig) *KafkaDataWriter {
+func NewKafkaDataWriter(brokers []*db.BaseConfig) db.DataWriter {
 	config := sarama.NewConfig()
 	config.Producer.RequiredAcks = sarama.WaitForLocal
 	config.Producer.Flush.Frequency = 500 * time.Millisecond
@@ -82,33 +83,50 @@ func (writer *KafkaDataWriter) Stop() {
 	writer.asyncProducer.AsyncClose()
 }
 
-func (writer *KafkaDataWriter) WriteDataAsync(data *db.Data) error {
-	siz := len(data.RawData)
-	for i := 0; i < siz; i++ {
-		msg := &sarama.ProducerMessage{
-			Topic: data.MetaInfo[topicKey],
-			Key:   sarama.StringEncoder(data.MetaInfo[keyKey]),
-			Value: sarama.StringEncoder(data.RawData[i]),
-		}
-		writer.asyncProducer.Input() <- msg
+func (writer *KafkaDataWriter) WriteData(data *db.Data) error {
+	if writer.brokers[0].AdditionalConfig[syncWriteKey] == "1" {
+		return writer.WriteDataSync(data)
+	} else {
+		return writer.WriteDataAsync(data)
 	}
+}
+
+func (writer *KafkaDataWriter) prepareData(data *db.Data) (*sarama.ProducerMessage, error) {
+	payload, err := json.Marshal(data)
+	if err != nil {
+		glog.Errorf("Failed to marshal db.Data object, error=%s", err)
+		return nil, err
+	}
+
+	msg := &sarama.ProducerMessage{
+		Topic: data.MetaInfo[topicKey],
+		Key:   sarama.StringEncoder(data.MetaInfo[keyKey]),
+		Value: sarama.StringEncoder(payload),
+	}
+	return msg, err
+}
+
+func (writer *KafkaDataWriter) WriteDataAsync(data *db.Data) error {
+	msg, err := writer.prepareData(data)
+	if err != nil {
+		return err
+	}
+	writer.asyncProducer.Input() <- msg
 	return nil
 }
 
 func (writer *KafkaDataWriter) WriteDataSync(data *db.Data) error {
-	siz := len(data.RawData)
-	for i := 0; i < siz; i++ {
-		msg := &sarama.ProducerMessage{
-			Topic: data.MetaInfo[topicKey],
-			Key:   sarama.StringEncoder(data.MetaInfo[keyKey]),
-			Value: sarama.StringEncoder(data.RawData[i]),
-		}
-		partition, offset, err := writer.syncProducer.SendMessage(msg)
-		// FIXME retry other brokers when failed ?
-		if err != nil {
-			glog.Errorf("Failed to write data to kafka for topic=%s, key=%s, error=%s", msg.Topic, msg.Key, err)
-		}
-		fmt.Printf("partition=%d, offset=%d\n", partition, offset)
+	msg, err := writer.prepareData(data)
+	if err != nil {
+		return err
 	}
-	return nil
+
+	_, _, err = writer.syncProducer.SendMessage(msg)
+	// FIXME retry other brokers when failed ?
+	// glog.Errorf("topic=%s, partition=%d, offset=%d, error=%s", msg.Topic, partition, offset, err)
+	if err != nil {
+		glog.Errorf("Failed to write data to kafka for topic=%s, partition=%d, key=%s, error=%s",
+			msg.Topic, msg.Partition, msg.Key, err)
+	}
+	return err
 }

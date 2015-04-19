@@ -1,7 +1,6 @@
 package kafka
 
 import (
-	// "strconv"
 	"encoding/json"
 	"fmt"
 	"github.com/Shopify/sarama"
@@ -20,9 +19,11 @@ type collectionState struct {
 }
 
 type KafkaDataReaderConfig struct {
-	ConsumerGroup string
-	Topic         string
-	Partition     int32
+	ConsumerGroup       string
+	Topic               string
+	Partition           int32
+	CheckpointTopic     string
+	CheckpointPartition int32
 }
 
 type KafkaDataReader struct {
@@ -56,21 +57,20 @@ func NewKafkaDataReader(client *db.KafkaClient, readerConfig KafkaDataReaderConf
 		glog.Errorf("Failed to create Kafka consumer, error=%s", err)
 		return nil
 	}
+
 	defer func() {
 		if err != nil {
 			master.Close()
 		}
 	}()
 
-	offset, err := client.GetPartitionOffset(readerConfig.ConsumerGroup, topic, partition)
-	if err != nil {
-		return nil
+	keyInfo := map[string]string{
+		"Topic":     readerConfig.CheckpointTopic,
+		"Partition": fmt.Sprintf("%d", readerConfig.CheckpointPartition),
 	}
-	fmt.Println(fmt.Sprintf("Get offset=%d for consumer group=%s, topic=%s, partition=%d,", offset, readerConfig.ConsumerGroup, readerConfig.Topic, readerConfig.Partition))
 
-	consumer, err := master.ConsumePartition(topic, partition, offset)
+	data, err := checkpoint.GetCheckpoint(keyInfo)
 	if err != nil {
-		glog.Errorf("Failed to create Kafka partition consumer for topic=%s, partition=%d, error=%s", topic, partition, err)
 		return nil
 	}
 
@@ -79,7 +79,21 @@ func NewKafkaDataReader(client *db.KafkaClient, readerConfig KafkaDataReaderConf
 		ConsumerGroup: readerConfig.ConsumerGroup,
 		Topic:         topic,
 		Partition:     partition,
-		Offset:        offset,
+		Offset:        sarama.OffsetOldest,
+	}
+
+	if data != nil {
+		err = json.Unmarshal(data, &state)
+		if err != nil {
+			return nil
+		}
+	}
+	fmt.Println(fmt.Sprintf("Get offset=%d for consumer group=%s, topic=%s, partition=%d,", state.Offset, readerConfig.ConsumerGroup, topic, partition))
+
+	consumer, err := master.ConsumePartition(topic, partition, state.Offset)
+	if err != nil {
+		glog.Errorf("Failed to create Kafka partition consumer for topic=%s, partition=%d, error=%s", topic, partition, err)
+		return nil
 	}
 
 	return &KafkaDataReader{
@@ -99,18 +113,6 @@ func (reader *KafkaDataReader) Start() {
 		glog.Info("KafkDataReader already started or stopped")
 		return
 	}
-
-	go func() {
-		for {
-			for err := range reader.partitionConsumer.Errors() {
-				glog.Errorf("Encounter error while collecting data, error=%s", err)
-			}
-
-			if atomic.LoadInt32(&reader.collecting) == stopped {
-				break
-			}
-		}
-	}()
 }
 
 func (reader *KafkaDataReader) Stop() {
@@ -119,7 +121,6 @@ func (reader *KafkaDataReader) Stop() {
 		return
 	}
 	reader.master.Close()
-
 	reader.partitionConsumer.AsyncClose()
 }
 
@@ -128,19 +129,63 @@ func (reader *KafkaDataReader) CollectData() ([]byte, error) {
 }
 
 func (reader *KafkaDataReader) IndexData() error {
-	for msg := range reader.partitionConsumer.Messages() {
-		metaInfo := map[string]string{}
-		data := db.NewData(metaInfo, [][]byte{msg.Value})
-		reader.writeData(msg.Topic, msg.Partition, msg.Offset, data)
-		reader.saveOffset(msg.Offset)
+	var (
+		n                               = 128
+		lastMsg *sarama.ConsumerMessage = nil
+		batchs                          = make([]*db.Data, 0, n)
+		errMsg                          = "Failed to unmarshal msg, expect marshalled in JSON format of db.Data"
+	)
+
+	f := func(msg *sarama.ConsumerMessage, msgs []*db.Data) []*db.Data {
+		for _, d := range msgs {
+			reader.writeData(msg.Topic, msg.Partition, msg.Offset, d)
+		}
+		reader.saveOffset(msg.Offset + 1)
+		msgs = msgs[:0]
+		return msgs
+	}
+
+	ticker := time.Tick(30 * time.Second)
+	for atomic.LoadInt32(&reader.collecting) != stopped {
+		select {
+		case err, ok := <-reader.partitionConsumer.Errors():
+			if !ok {
+				glog.Errorf("Encounter error while collecting data, error=%s", err)
+			}
+
+		case msg, ok := <-reader.partitionConsumer.Messages():
+			if !ok {
+				break
+			}
+			var data db.Data
+			err := json.Unmarshal(msg.Value, &data)
+			if err != nil {
+				glog.Errorf(errMsg)
+				continue
+			}
+
+			lastMsg = msg
+			batchs = append(batchs, &data)
+			if len(batchs) == n {
+				batchs = f(msg, batchs)
+			}
+
+		case <-ticker:
+			if lastMsg != nil && len(batchs) > 0 {
+				batchs = f(lastMsg, batchs)
+			}
+
+		default:
+			time.Sleep(100 * time.Millisecond)
+		}
 	}
 	return nil
 }
 
 func (reader *KafkaDataReader) writeData(topic string, partition int32, offset int64, data *db.Data) {
-	var err error
-	for i := 0; i < maxRetry; i++ {
-		err = reader.writer.WriteData(data)
+	var i int
+	for i = 0; i < maxRetry; i++ {
+		err := reader.writer.WriteData(data)
 		if err != nil {
 			glog.Errorf("Failed to write data for topic=%s, partition=%d, offset=%d, error=%s", topic, partition, offset, err)
 			time.Sleep(time.Second)
@@ -149,7 +194,7 @@ func (reader *KafkaDataReader) writeData(topic string, partition int32, offset i
 		}
 	}
 
-	if err != nil {
+	if i == maxRetry {
 		panic(fmt.Sprintf("Failed to write data for topic=%s, partition=%d, offset=%d", topic, partition, offset))
 	}
 }
@@ -157,12 +202,13 @@ func (reader *KafkaDataReader) writeData(topic string, partition int32, offset i
 func (reader *KafkaDataReader) saveOffset(offset int64) {
 	var newState collectionState = reader.state
 	newState.Offset = offset
-	if newState.ConsumerGroup == "" {
-		// FIXME generate one
-		newState.ConsumerGroup = "generatedOne"
-	}
-	errMsg := fmt.Sprintf("Failed to marshal/write checkpoint for consumer group=%s, topic=%s, parition=%s, offset=%s", newState.ConsumerGroup, newState.Topic, newState.Partition, offset)
 
+	keyInfo := map[string]string{
+		"Topic":     reader.config.CheckpointTopic,
+		"Partition": fmt.Sprintf("%d", reader.config.CheckpointPartition),
+	}
+
+	errMsg := fmt.Sprintf("Failed to marshal/write checkpoint for consumer group=%s, topic=%s, parition=%d, offset=%d", newState.ConsumerGroup, newState.Topic, newState.Partition, offset)
 	var i int
 	for i = 0; i < maxRetry; i++ {
 		data, err := json.Marshal(&newState)
@@ -170,8 +216,8 @@ func (reader *KafkaDataReader) saveOffset(offset int64) {
 			glog.Errorf(errMsg)
 			continue
 		}
-		key := fmt.Sprintf("%s_%s_%d", newState.ConsumerGroup, newState.Topic, newState.Partition)
-		err = reader.checkpoint.WriteCheckpoint(map[string]string{"key": key}, data)
+
+		err = reader.checkpoint.WriteCheckpoint(keyInfo, data)
 		if err != nil {
 			glog.Errorf(errMsg)
 		} else {
@@ -180,22 +226,6 @@ func (reader *KafkaDataReader) saveOffset(offset int64) {
 	}
 
 	if i == maxRetry {
-		panic(fmt.Sprintf(errMsg))
-	}
-
-	broker, err := reader.client.Client().Leader(newState.Topic, newState.Partition)
-	if err != nil {
-		glog.Errorf("Failed to get leader for topic=%s, partition=%s, reason=%s", newState.Topic, newState.Partition, err)
-	}
-
-	req := &sarama.OffsetCommitRequest{
-		ConsumerGroup: newState.ConsumerGroup,
-		Version:       1,
-	}
-	req.AddBlock(newState.Topic, newState.Partition, offset, time.Now().UnixNano(), "")
-	resp, err := broker.CommitOffset(req)
-	fmt.Println(fmt.Sprintf("Commit offset=%d for consumer group=%s, topic=%s, partition=%d,", offset, newState.ConsumerGroup, newState.Topic, newState.Partition))
-	if err != nil {
-		glog.Errorf("Failed to commit offset for topic=%s, partition=%s, reason=%s,%s", newState.Topic, newState.Partition, err, resp)
+		panic(errMsg)
 	}
 }

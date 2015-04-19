@@ -21,6 +21,8 @@ func TestKafkaDataWriter(t *testing.T) {
 		metaInfo := map[string]string{
 			"Topic": "DescartesTest",
 			"Key":   "MyKey",
+			"host":  "my.host.com",
+			"user":  "Ken Chen",
 		}
 		rawData := [][]byte{[]byte("sync:a=b,c=d,1=2,3=4"), []byte("sync:1=2,3=4,a=b,c=d")}
 		data := db.NewData(metaInfo, rawData)
@@ -28,7 +30,6 @@ func TestKafkaDataWriter(t *testing.T) {
 		asyncData := db.NewData(metaInfo, asyncrawData)
 		writer.WriteDataSync(data)
 		writer.WriteDataAsync(asyncData)
-		time.Sleep(time.Second)
 	}
 	time.Sleep(time.Second)
 }

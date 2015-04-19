@@ -1,6 +1,7 @@
 package kafka
 
 import (
+	_ "encoding/json"
 	_ "fmt"
 	_ "github.com/Shopify/sarama"
 	db "github.com/chenziliang/descartes/base"
@@ -8,29 +9,20 @@ import (
 	"time"
 )
 
-func TestKafkaDataReader(t *testing.T) {
-	brokerConfigs := []*db.BaseConfig{
-		&db.BaseConfig{
-			ServerURL: "172.16.107.153:9092",
-		},
+func doTest() {
+	/*keyInfo := map[string]string {
+		"Topic": readerConfig.CheckpointTopic,
+		"Partition": fmt.Sprintf("%d", readerConfig.CheckpointPartition),
 	}
-	client := db.NewKafkaClient(brokerConfigs, "consumerClient")
-
-	consumerGroup, topic := "testConsumerGroup", "DescartesTest"
-	var partition int32 = 0
-	readerConfig := KafkaDataReaderConfig{
-		ConsumerGroup: consumerGroup,
-		Topic:         topic,
-		Partition:     partition,
-	}
-
-	writer := &db.StdoutDataWriter{}
-	ck := db.NewFileCheckpointer(".", "test")
-	writer.Start()
-	dataReader := NewKafkaDataReader(client, readerConfig, writer, ck)
-	go dataReader.IndexData()
-	time.Sleep(3 * time.Second)
-	dataReader.Stop()
+	fmt.Println("%+v", keyInfo)
+	ck := db.NewKafkaCheckpointer(client)
+	var state collectionState
+	sdata, _ := json.Marshal(&state)
+	err := ck.WriteCheckpoint(keyInfo, sdata)
+	fmt.Println("%s", err)
+	data, err := ck.GetCheckpoint(keyInfo)
+	fmt.Println(string(data))
+	fmt.Println(err)*/
 
 	/*broker := sarama.NewBroker("172.16.107.153:9092")
 	config := sarama.NewConfig()
@@ -90,7 +82,53 @@ func TestKafkaDataReader(t *testing.T) {
 
 	//consumerGroup = "xxxx"
 	offset, err = client.GetPartitionOffset(consumerGroup, topic, partition)
-	fmt.Printf("offset=%d, error=%s\n", offset, err)*/
+	fmt.Printf("offset=%d, error=%s\n", offset, err)
 
-	time.Sleep(5 * time.Second)
+	offset, err := client.GetProducerOffset(topic, partition)
+	fmt.Println(offset)
+
+	data, err := client.GetLastBlock(topic, partition)
+	if err != nil {
+		t.Errorf("Failed to get last block, error=%s", err)
+	}
+	fmt.Println(string(data)) */
+}
+
+func TestKafkaDataReader(t *testing.T) {
+	brokerConfigs := []*db.BaseConfig{
+		&db.BaseConfig{
+			ServerURL: "172.16.107.153:9092",
+		},
+	}
+	client := db.NewKafkaClient(brokerConfigs, "consumerClient")
+
+	consumerGroup, topic := "testConsumerGroup", "DescartesTest"
+	ckTopic := "CheckpointTopic_1"
+	var partition int32 = 0
+	readerConfig := KafkaDataReaderConfig{
+		ConsumerGroup:       consumerGroup,
+		Topic:               topic,
+		Partition:           partition,
+		CheckpointTopic:     ckTopic,
+		CheckpointPartition: partition,
+	}
+
+	writer := &db.StdoutDataWriter{}
+	writer.Start()
+
+	ck := db.NewKafkaCheckpointer(client)
+	ck.Start()
+
+	dataReader := NewKafkaDataReader(client, readerConfig, writer, ck)
+	dataReader.Start()
+
+	go dataReader.IndexData()
+
+	time.Sleep(40 * time.Second)
+
+	dataReader.Stop()
+	ck.Stop()
+	writer.Stop()
+
+	time.Sleep(time.Second)
 }

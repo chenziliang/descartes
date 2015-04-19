@@ -27,7 +27,7 @@ type SplunkDataWriter struct {
 	started            int32
 }
 
-func NewSplunkDataWriter(credentials []*db.BaseConfig) *SplunkDataWriter {
+func NewSplunkDataWriter(credentials []*db.BaseConfig) db.DataWriter {
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
