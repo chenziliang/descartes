@@ -41,14 +41,14 @@ func NewKafkaDataWriter(brokers []*db.BaseConfig) db.DataWriter {
 
 	asyncProducer, err := sarama.NewAsyncProducer(brokerList, config)
 	if err != nil {
-		glog.Error("Failed to create Kafka async producer, error=", err)
+		glog.Errorf("Failed to create Kafka async producer, error=%s", err)
 		return nil
 	}
 
 	syncConfig := sarama.NewConfig()
 	syncProducer, err := sarama.NewSyncProducer(brokerList, syncConfig)
 	if err != nil {
-		glog.Error("Failed to create Kafka sync producer, error=", err)
+		glog.Errorf("Failed to create Kafka sync producer, error=%s", err)
 		return nil
 	}
 
@@ -68,7 +68,7 @@ func (writer *KafkaDataWriter) Start() {
 
 	go func() {
 		for err := range writer.asyncProducer.Errors() {
-			glog.Error("Kafka AsyncProducer encounter error=", err)
+			glog.Errorf("Kafka AsyncProducer encounter error=%s", err)
 		}
 	}()
 }

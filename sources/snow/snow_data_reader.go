@@ -87,7 +87,7 @@ func (snow *SnowDataReader) CollectData() ([]byte, error) {
 	// fmt.Println(snow.getURL())
 	req, err := http.NewRequest("GET", snow.getURL(), nil)
 	if err != nil {
-		glog.Error("Failed to create request, error=", err)
+		glog.Errorf("Failed to create request, error=%s", err)
 		return nil, err
 	}
 
@@ -97,21 +97,21 @@ func (snow *SnowDataReader) CollectData() ([]byte, error) {
 
 	resp, err := snow.http_client.Do(req)
 	if err != nil {
-		glog.Error("Failed to do request, error=", err)
+		glog.Errorf("Failed to do request, error=%s", err)
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	reader, err := gzip.NewReader(resp.Body)
 	if err != nil {
-		glog.Error("Failed to create gzip reader, error=", err)
+		glog.Errorf("Failed to create gzip reader, error=%s", err)
 		return nil, err
 	}
 	defer reader.Close()
 
 	body, err := ioutil.ReadAll(reader)
 	if err != nil {
-		glog.Error("Failed to read uncompressed data, error=", err)
+		glog.Errorf("Failed to read uncompressed data, error=%s", err)
 		return nil, err
 	}
 	return body, nil
@@ -169,7 +169,7 @@ func (snow *SnowDataReader) doRemoveRecords(records []interface{}, lastTimeRecor
 	for i := 0; i < len(records); i++ {
 		r, ok := records[i].(map[string]interface{})
 		if !ok {
-			glog.Error("Encount unknown format %+v", records[i])
+			glog.Errorf("Encount unknown format %+v", records[i])
 			continue
 		}
 
@@ -263,7 +263,7 @@ func (snow *SnowDataReader) writeCheckpoint(records []interface{}, refreshed boo
 
 	data, err := json.Marshal(currentState)
 	if err != nil {
-		glog.Error("Failed to marhsal checkpoint, error=", err)
+		glog.Errorf("Failed to marhsal checkpoint, error=%s", err)
 		return err
 	}
 
