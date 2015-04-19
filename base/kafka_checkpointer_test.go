@@ -1,7 +1,6 @@
 package base
 
 import (
-	"fmt"
 	"testing"
 )
 
@@ -14,9 +13,9 @@ func TestKafkaCheckponter(t *testing.T) {
 	client := NewKafkaClient(brokerConfigs, "consumerClient")
 
 	keyInfo := map[string]string{
-		"Topic":     "CheckpointTestTopic",
-		"Partition": "0",
-		"Key":       "",
+		CheckpointTopic:     "CheckpointTestTopic",
+		CheckpointPartition: "0",
+		CheckpointKey:       "",
 	}
 
 	data := []byte("abc")
@@ -34,10 +33,4 @@ func TestKafkaCheckponter(t *testing.T) {
 	if string(ckData) != string(data) {
 		t.Errorf("Failed to get checkpoint, expected=%s, got=%s", data, ckData)
 	}
-
-	topicPartitions, err := client.TopicPartitions("")
-	if err != nil {
-		t.Errorf("Failed to get topic and partitions, error=%s", err)
-	}
-	fmt.Println(topicPartitions)
 }

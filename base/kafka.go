@@ -7,8 +7,9 @@ import (
 )
 
 type KafkaClient struct {
-	brokerConfigs []*BaseConfig
-	client        sarama.Client
+	brokerConfigs   []*BaseConfig
+	client          sarama.Client
+	topicPartitions map[string][]int32
 }
 
 const (
@@ -76,6 +77,8 @@ func (client *KafkaClient) TopicPartitions(topic string) (map[string][]int32, er
 	if len(topicPartitions) == 0 {
 		return nil, err
 	}
+	// race condition
+	client.topicPartitions = topicPartitions
 	return topicPartitions, nil
 }
 
@@ -173,8 +176,14 @@ func (client *KafkaClient) Leader(topic string, partition int32) (*sarama.Broker
 	for i := 0; i < maxRetry; i++ {
 		leader, err = client.client.Leader(topic, partition)
 		if err != nil {
-			// FIXME retry
 			glog.Errorf("Failed to get leader for topic=%s, partition=%d, error=%s", topic, partition, err)
+			if client.topicPartitions != nil {
+				// Fast break out if topic doesn't exist
+				_, ok := client.topicPartitions[topic]
+				if !ok {
+					return nil, err
+				}
+			}
 			time.Sleep(time.Second)
 		} else {
 			return leader, err

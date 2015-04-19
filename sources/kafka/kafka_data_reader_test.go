@@ -101,6 +101,9 @@ func TestKafkaDataReader(t *testing.T) {
 		},
 	}
 	client := db.NewKafkaClient(brokerConfigs, "consumerClient")
+	if client == nil {
+		t.Errorf("Failed to create KafkaClient")
+	}
 
 	consumerGroup, topic := "testConsumerGroup", "DescartesTest"
 	ckTopic := "CheckpointTopic_1"
@@ -120,6 +123,9 @@ func TestKafkaDataReader(t *testing.T) {
 	ck.Start()
 
 	dataReader := NewKafkaDataReader(client, readerConfig, writer, ck)
+	if dataReader == nil {
+		t.Errorf("Failed to create KafkaDataReader")
+	}
 	dataReader.Start()
 
 	go dataReader.IndexData()

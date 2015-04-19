@@ -13,10 +13,12 @@ type person struct {
 
 func TestCheckpointer(t *testing.T) {
 	keyInfo := map[string]string{
-		"key": "myapp_status",
+		CheckpointDir:       ".",
+		CheckpointNamespace: "myapp",
+		CheckpointKey:       "ck_status",
 	}
 
-	ck := NewFileCheckpointer(".", "myapp")
+	ck := NewFileCheckpointer()
 	_, err := ck.GetCheckpoint(keyInfo)
 	if err == nil {
 		t.Error("GetCheckpoint should error out, but got no error")

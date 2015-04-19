@@ -65,8 +65,8 @@ func NewKafkaDataReader(client *db.KafkaClient, readerConfig KafkaDataReaderConf
 	}()
 
 	keyInfo := map[string]string{
-		"Topic":     readerConfig.CheckpointTopic,
-		"Partition": fmt.Sprintf("%d", readerConfig.CheckpointPartition),
+		db.CheckpointTopic:     readerConfig.CheckpointTopic,
+		db.CheckpointPartition: fmt.Sprintf("%d", readerConfig.CheckpointPartition),
 	}
 
 	data, err := checkpoint.GetCheckpoint(keyInfo)
@@ -88,7 +88,7 @@ func NewKafkaDataReader(client *db.KafkaClient, readerConfig KafkaDataReaderConf
 			return nil
 		}
 	}
-	fmt.Println(fmt.Sprintf("Get offset=%d for consumer group=%s, topic=%s, partition=%d,", state.Offset, readerConfig.ConsumerGroup, topic, partition))
+	// fmt.Println(fmt.Sprintf("Get offset=%d for consumer group=%s, topic=%s, partition=%d,", state.Offset, readerConfig.ConsumerGroup, topic, partition))
 
 	consumer, err := master.ConsumePartition(topic, partition, state.Offset)
 	if err != nil {
@@ -133,14 +133,18 @@ func (reader *KafkaDataReader) IndexData() error {
 		n                               = 128
 		lastMsg *sarama.ConsumerMessage = nil
 		batchs                          = make([]*db.Data, 0, n)
-		errMsg                          = "Failed to unmarshal msg, expect marshalled in JSON format of db.Data"
+		keyInfo                         = map[string]string{
+			db.CheckpointTopic:     reader.config.CheckpointTopic,
+			db.CheckpointPartition: fmt.Sprintf("%d", reader.config.CheckpointPartition),
+		}
+		errMsg = "Failed to unmarshal msg, expect marshalled in JSON format of db.Data"
 	)
 
 	f := func(msg *sarama.ConsumerMessage, msgs []*db.Data) []*db.Data {
 		for _, d := range msgs {
 			reader.writeData(msg.Topic, msg.Partition, msg.Offset, d)
 		}
-		reader.saveOffset(msg.Offset + 1)
+		reader.saveOffset(keyInfo, msg.Offset+1)
 		msgs = msgs[:0]
 		return msgs
 	}
@@ -152,7 +156,6 @@ func (reader *KafkaDataReader) IndexData() error {
 			if !ok {
 				glog.Errorf("Encounter error while collecting data, error=%s", err)
 			}
-
 		case msg, ok := <-reader.partitionConsumer.Messages():
 			if !ok {
 				break
@@ -199,14 +202,9 @@ func (reader *KafkaDataReader) writeData(topic string, partition int32, offset i
 	}
 }
 
-func (reader *KafkaDataReader) saveOffset(offset int64) {
+func (reader *KafkaDataReader) saveOffset(keyInfo map[string]string, offset int64) {
 	var newState collectionState = reader.state
 	newState.Offset = offset
-
-	keyInfo := map[string]string{
-		"Topic":     reader.config.CheckpointTopic,
-		"Partition": fmt.Sprintf("%d", reader.config.CheckpointPartition),
-	}
 
 	errMsg := fmt.Sprintf("Failed to marshal/write checkpoint for consumer group=%s, topic=%s, parition=%d, offset=%d", newState.ConsumerGroup, newState.Topic, newState.Partition, offset)
 	var i int

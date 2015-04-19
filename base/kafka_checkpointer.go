@@ -46,10 +46,10 @@ func (ck *KafkaCheckpointer) Stop() {
 }
 
 func (ck *KafkaCheckpointer) GetCheckpoint(keyInfo map[string]string) ([]byte, error) {
-	partition, _ := strconv.Atoi(keyInfo["Partition"])
-	data, err := ck.client.GetLastBlock(keyInfo["Topic"], int32(partition))
+	partition, _ := strconv.Atoi(keyInfo[CheckpointPartition])
+	data, err := ck.client.GetLastBlock(keyInfo[CheckpointTopic], int32(partition))
 	if err != nil {
-		glog.Errorf("Failed to get checkpoint for topic=%s, partition=%s", keyInfo["Topic"], keyInfo["Partition"])
+		glog.Errorf("Failed to get checkpoint for topic=%s, partition=%s", keyInfo[CheckpointTopic], keyInfo[CheckpointPartition])
 		return nil, err
 	}
 	return data, nil
@@ -57,8 +57,8 @@ func (ck *KafkaCheckpointer) GetCheckpoint(keyInfo map[string]string) ([]byte, e
 
 func (ck *KafkaCheckpointer) WriteCheckpoint(keyInfo map[string]string, value []byte) error {
 	msg := &sarama.ProducerMessage{
-		Topic: keyInfo["Topic"],
-		Key:   sarama.StringEncoder(keyInfo["Key"]),
+		Topic: keyInfo[CheckpointTopic],
+		Key:   sarama.StringEncoder(keyInfo[CheckpointKey]),
 		Value: sarama.StringEncoder(value),
 	}
 	_, _, err := ck.syncProducer.SendMessage(msg)

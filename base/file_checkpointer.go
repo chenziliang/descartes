@@ -12,15 +12,10 @@ const (
 )
 
 type FileCheckpointer struct {
-	fileDir   string
-	namespace string
 }
 
-func NewFileCheckpointer(fileDir, namespace string) Checkpointer {
-	return &FileCheckpointer{
-		fileDir:   fileDir,
-		namespace: namespace,
-	}
+func NewFileCheckpointer() Checkpointer {
+	return &FileCheckpointer{}
 }
 
 func (ck *FileCheckpointer) Start() {
@@ -29,8 +24,9 @@ func (ck *FileCheckpointer) Start() {
 func (ck *FileCheckpointer) Stop() {
 }
 
+// @keyInfo: contains "CheckpointDir", "CheckpointNamespace", "CheckpointKey"
 func (ck *FileCheckpointer) GetCheckpoint(keyInfo map[string]string) ([]byte, error) {
-	ckFileName := filepath.Join(ck.fileDir, ck.namespace+"_"+keyInfo["Key"]+checkpointFilePostfix)
+	ckFileName := filepath.Join(keyInfo[CheckpointDir], keyInfo[CheckpointNamespace]+"_"+keyInfo[CheckpointKey]+checkpointFilePostfix)
 	content, err := ioutil.ReadFile(ckFileName)
 	if err != nil {
 		glog.Errorf("Failed to get checkpoint from %s, error=%s", ckFileName, err)
@@ -39,8 +35,9 @@ func (ck *FileCheckpointer) GetCheckpoint(keyInfo map[string]string) ([]byte, er
 	return content, err
 }
 
+// @keyInfo: contains "CheckpointDir", "CheckpointNamespace", "CheckpointKey"
 func (ck *FileCheckpointer) WriteCheckpoint(keyInfo map[string]string, value []byte) error {
-	ckFileName := filepath.Join(ck.fileDir, ck.namespace+"_"+keyInfo["Key"]+checkpointFilePostfix)
+	ckFileName := filepath.Join(keyInfo[CheckpointDir], keyInfo[CheckpointNamespace]+"_"+keyInfo[CheckpointKey]+checkpointFilePostfix)
 	err := ioutil.WriteFile(ckFileName, []byte(value), 0644)
 	if err != nil {
 		glog.Errorf("Failed to write checkpoint to %s, error=%s", ckFileName, err)
@@ -48,8 +45,9 @@ func (ck *FileCheckpointer) WriteCheckpoint(keyInfo map[string]string, value []b
 	return err
 }
 
+// @keyInfo: contains "CheckpointDir", "CheckpointNamespace", "CheckpointKey"
 func (ck *FileCheckpointer) DeleteCheckpoint(keyInfo map[string]string) error {
-	ckFileName := filepath.Join(ck.fileDir, ck.namespace+"_"+keyInfo["Key"]+checkpointFilePostfix)
+	ckFileName := filepath.Join(keyInfo[CheckpointDir], keyInfo[CheckpointNamespace]+"_"+keyInfo[CheckpointKey]+checkpointFilePostfix)
 	err := os.Remove(ckFileName)
 	if err != nil {
 		glog.Errorf("Failed to remove checkpoint %s, error=%s", ckFileName, err)

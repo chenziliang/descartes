@@ -3,7 +3,6 @@ package snow
 import (
 	"bytes"
 	"compress/gzip"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -29,7 +28,6 @@ type SnowDataReader struct {
 	checkpoint  db.Checkpointer
 	http_client *http.Client
 	state       collectionState
-	ckKey       map[string]string
 	collecting  int32
 }
 
@@ -54,19 +52,11 @@ func NewSnowDataReader(
 		}
 	}
 
-	reader := []byte(config.ServerURL)
-	var buf bytes.Buffer
-	encoder := base64.NewEncoder(base64.StdEncoding, &buf)
-	defer encoder.Close()
-	encoder.Write(reader)
-
-	keyInfo := map[string]string{"Key": buf.String() + "_" + config.AdditionalConfig[endpointKey]}
 	return &SnowDataReader{
 		BaseConfig:  config,
 		writer:      writer,
 		checkpoint:  checkpointer,
 		http_client: &http.Client{Timeout: 120 * time.Second},
-		ckKey:       keyInfo,
 		collecting:  0,
 	}
 }
@@ -94,7 +84,7 @@ func (snow *SnowDataReader) CollectData() ([]byte, error) {
 	}
 	defer atomic.StoreInt32(&snow.collecting, 1)
 
-	fmt.Println(snow.getURL())
+	// fmt.Println(snow.getURL())
 	req, err := http.NewRequest("GET", snow.getURL(), nil)
 	if err != nil {
 		glog.Error("Failed to create request, error=", err)
@@ -277,7 +267,7 @@ func (snow *SnowDataReader) writeCheckpoint(records []interface{}, refreshed boo
 		return err
 	}
 
-	err = snow.checkpoint.WriteCheckpoint(snow.ckKey, data)
+	err = snow.checkpoint.WriteCheckpoint(snow.AdditionalConfig, data)
 	if err != nil {
 		return err
 	}
@@ -294,15 +284,15 @@ func (snow *SnowDataReader) getCheckpoint() *collectionState {
 	}
 
 	glog.Info("State is not in cache, reload from checkpoint")
-	ck, err := snow.checkpoint.GetCheckpoint(snow.ckKey)
-	if err != nil {
+	ck, err := snow.checkpoint.GetCheckpoint(snow.AdditionalConfig)
+	if err != nil || ck == nil {
 		return nil
 	}
 
 	var currentState collectionState
 	err = json.Unmarshal(ck, &currentState)
 	if err != nil {
-		glog.Error("Failed to unmarshal checkpoint, error=", err)
+		glog.Errorf("Failed to unmarshal checkpoint, error=%s", err)
 		return nil
 	}
 
