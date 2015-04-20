@@ -33,16 +33,16 @@ type SnowDataReader struct {
 }
 
 const (
-	endpointKey       = "endpoint"
-	timestampFieldKey = "timestampField"
-	nextRecordTimeKey = "nextRecordTime"
-	recordCountKey    = "recordCount"
+	endpointKey       = "Endpoint"
+	timestampFieldKey = "TimestampField"
+	nextRecordTimeKey = "NextRecordTime"
+	recordCountKey    = "RecordCount"
 	timeTemplate      = "2006-01-02 15:04:05"
 )
 
 // NewSnowDataReader
-// @config.AdditionalConfig: shall contain snow "endpoint", "timestampField"
-// "nextRecordTime", "recordCount" key/values
+// @config.AdditionalConfig: shall contain snow "Endpoint", "TimestampField"
+// "NextRecordTime", "RecordCount" key/values
 func NewSnowDataReader(
 	config *base.BaseConfig, writer base.DataWriter, checkpointer base.Checkpointer) *SnowDataReader {
 	acquiredConfigs := []string{endpointKey, timestampFieldKey, nextRecordTimeKey}
@@ -155,9 +155,9 @@ func (snow *SnowDataReader) IndexData() error {
 
 	if records, ok := jobj["records"].([]interface{}); ok {
 		metaInfo := map[string]string{
-			"ServerURL": snow.ServerURL,
-			"Username":  snow.Username,
-			"Endpoint":  snow.AdditionalConfig["endpoint"],
+			base.ServerURL: snow.ServerURL,
+			base.Username:  snow.Username,
+			endpointKey:    snow.AdditionalConfig[endpointKey],
 		}
 		records, refreshed := snow.removeCollectedRecords(records)
 		allData := base.NewData(metaInfo, make([][]byte, len(records)))

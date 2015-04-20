@@ -21,10 +21,10 @@ func TestSplunkDataWriter(t *testing.T) {
 	defer writer.Stop()
 
 	metaInfo := map[string]string{
-		hostKey:       "ghost.com",
-		indexKey:      "main",
-		sourceKey:     "descartes",
-		sourcetypeKey: "my:event:test",
+		base.Host:       "ghost.com",
+		base.Index:      "main",
+		base.Source:     "descartes",
+		base.Sourcetype: "my:event:test",
 	}
 
 	asyncData := [][]byte{

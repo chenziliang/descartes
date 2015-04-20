@@ -20,10 +20,10 @@ func TestSnowDataReader(t *testing.T) {
 	var partition int32 = 0
 
 	additionalConfig := map[string]string{
-		"endpoint":               "incident",
-		"timestampField":         "sys_updated_on",
-		"nextRecordTime":         "2014-03-23+08:19:04",
-		"recordCount":            "5",
+		endpointKey:              "incident",
+		timestampFieldKey:        "sys_updated_on",
+		nextRecordTimeKey:        "2014-03-23+08:19:04",
+		recordCountKey:           "5",
 		base.CheckpointDir:       ".",
 		base.CheckpointNamespace: "test",
 		base.CheckpointKey:       buf.String() + "_" + "incident",
