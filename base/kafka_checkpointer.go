@@ -34,15 +34,17 @@ func NewKafkaCheckpointer(client *KafkaClient) Checkpointer {
 }
 
 func (ck *KafkaCheckpointer) Start() {
+	glog.Infof("KafkaCheckpointer started...")
 }
 
 func (ck *KafkaCheckpointer) Stop() {
 	if !atomic.CompareAndSwapInt32(&ck.state, started, stopped) {
-		glog.Info("KafkaCheckpointer has already stopped")
+		glog.Infof("KafkaCheckpointer has already stopped")
 		return
 	}
 
 	ck.syncProducer.Close()
+	glog.Infof("KafkaCheckpointer stopped...")
 }
 
 func (ck *KafkaCheckpointer) GetCheckpoint(keyInfo map[string]string) ([]byte, error) {

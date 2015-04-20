@@ -4,7 +4,7 @@ import (
 	_ "encoding/json"
 	_ "fmt"
 	_ "github.com/Shopify/sarama"
-	db "github.com/chenziliang/descartes/base"
+	"github.com/chenziliang/descartes/base"
 	"testing"
 	"time"
 )
@@ -15,7 +15,7 @@ func doTest() {
 		"Partition": fmt.Sprintf("%d", readerConfig.CheckpointPartition),
 	}
 	fmt.Println("%+v", keyInfo)
-	ck := db.NewKafkaCheckpointer(client)
+	ck := base.NewKafkaCheckpointer(client)
 	var state collectionState
 	sdata, _ := json.Marshal(&state)
 	err := ck.WriteCheckpoint(keyInfo, sdata)
@@ -95,34 +95,33 @@ func doTest() {
 }
 
 func TestKafkaDataReader(t *testing.T) {
-	brokerConfigs := []*db.BaseConfig{
-		&db.BaseConfig{
+	brokerConfigs := []*base.BaseConfig{
+		&base.BaseConfig{
 			ServerURL: "172.16.107.153:9092",
 		},
 	}
-	client := db.NewKafkaClient(brokerConfigs, "consumerClient")
+	client := base.NewKafkaClient(brokerConfigs, "consumerClient")
 	if client == nil {
 		t.Errorf("Failed to create KafkaClient")
 	}
 
 	consumerGroup, topic := "testConsumerGroup", "DescartesTest"
 	ckTopic := "CheckpointTopic_1"
-	var partition int32 = 0
-	readerConfig := KafkaDataReaderConfig{
-		ConsumerGroup:       consumerGroup,
-		Topic:               topic,
-		Partition:           partition,
-		CheckpointTopic:     ckTopic,
-		CheckpointPartition: partition,
+	config := map[string]string{
+		base.ConsumerGroup:       consumerGroup,
+		base.Topic:               topic,
+		base.Partition:           "0",
+		base.CheckpointTopic:     ckTopic,
+		base.CheckpointPartition: "0",
 	}
 
-	writer := &db.StdoutDataWriter{}
+	writer := &base.StdoutDataWriter{}
 	writer.Start()
 
-	ck := db.NewKafkaCheckpointer(client)
+	ck := base.NewKafkaCheckpointer(client)
 	ck.Start()
 
-	dataReader := NewKafkaDataReader(client, readerConfig, writer, ck)
+	dataReader := NewKafkaDataReader(client, config, writer, ck)
 	if dataReader == nil {
 		t.Errorf("Failed to create KafkaDataReader")
 	}

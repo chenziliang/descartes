@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	db "github.com/chenziliang/descartes/base"
+	"github.com/chenziliang/descartes/base"
 	"github.com/golang/glog"
 	"io/ioutil"
 	"net/http"
@@ -23,12 +23,13 @@ type collectionState struct {
 }
 
 type SnowDataReader struct {
-	*db.BaseConfig
-	writer      db.DataWriter
-	checkpoint  db.Checkpointer
+	*base.BaseConfig
+	writer      base.DataWriter
+	checkpoint  base.Checkpointer
 	http_client *http.Client
 	state       collectionState
 	collecting  int32
+	started     int32
 }
 
 const (
@@ -43,7 +44,7 @@ const (
 // @config.AdditionalConfig: shall contain snow "endpoint", "timestampField"
 // "nextRecordTime", "recordCount" key/values
 func NewSnowDataReader(
-	config *db.BaseConfig, writer db.DataWriter, checkpointer db.Checkpointer) *SnowDataReader {
+	config *base.BaseConfig, writer base.DataWriter, checkpointer base.Checkpointer) *SnowDataReader {
 	acquiredConfigs := []string{endpointKey, timestampFieldKey, nextRecordTimeKey}
 	for _, key := range acquiredConfigs {
 		if _, ok := config.AdditionalConfig[key]; !ok {
@@ -58,7 +59,31 @@ func NewSnowDataReader(
 		checkpoint:  checkpointer,
 		http_client: &http.Client{Timeout: 120 * time.Second},
 		collecting:  0,
+		started:     0,
 	}
+}
+
+func (snow *SnowDataReader) Start() {
+	if !atomic.CompareAndSwapInt32(&snow.started, 0, 1) {
+		glog.Infof("SnowDataReader already started")
+		return
+	}
+
+	snow.writer.Start()
+	snow.checkpoint.Start()
+	glog.Infof("SnowDataReader started...")
+}
+
+func (snow *SnowDataReader) Stop() {
+	glog.Infof("SnowDataReader is going to stop")
+	if !atomic.CompareAndSwapInt32(&snow.started, 1, 0) {
+		glog.Infof("SnowDataReader already stopped")
+		return
+	}
+
+	snow.writer.Stop()
+	snow.checkpoint.Stop()
+	glog.Infof("SnowDataReader stopped...")
 }
 
 func (snow *SnowDataReader) getURL() string {
@@ -79,12 +104,12 @@ func (snow *SnowDataReader) getURL() string {
 
 func (snow *SnowDataReader) CollectData() ([]byte, error) {
 	if !atomic.CompareAndSwapInt32(&snow.collecting, 0, 1) {
-		glog.Info("Last data collection for %s has not been done", snow.getURL())
+		glog.Infof("Last data collection for %s has not been done", snow.getURL())
 		return nil, nil
 	}
-	defer atomic.StoreInt32(&snow.collecting, 1)
+	defer atomic.StoreInt32(&snow.collecting, 0)
 
-	// fmt.Println(snow.getURL())
+	// glog.Infof(snow.getURL())
 	req, err := http.NewRequest("GET", snow.getURL(), nil)
 	if err != nil {
 		glog.Errorf("Failed to create request, error=%s", err)
@@ -119,24 +144,23 @@ func (snow *SnowDataReader) CollectData() ([]byte, error) {
 
 func (snow *SnowDataReader) IndexData() error {
 	data, err := snow.CollectData()
-	if err != nil {
+	if data == nil || err != nil {
 		return err
 	}
 
-	if data == nil {
-		return nil
-	}
-
-	jobj, err := db.ToJsonObject(data)
+	jobj, err := base.ToJsonObject(data)
 	if err != nil {
 		return err
 	}
 
 	if records, ok := jobj["records"].([]interface{}); ok {
-		// FIXME metaInfo
-		metaInfo := map[string]string{}
+		metaInfo := map[string]string{
+			"ServerURL": snow.ServerURL,
+			"Username":  snow.Username,
+			"Endpoint":  snow.AdditionalConfig["endpoint"],
+		}
 		records, refreshed := snow.removeCollectedRecords(records)
-		allData := db.NewData(metaInfo, make([][]byte, len(records)))
+		allData := base.NewData(metaInfo, make([][]byte, len(records)))
 		var record []string
 		for i := 0; i < len(records); i++ {
 			record = record[:0]
@@ -147,6 +171,7 @@ func (snow *SnowDataReader) IndexData() error {
 		}
 
 		if len(records) > 0 {
+			glog.Infof("indexing data into kafka")
 			err := snow.writer.WriteData(allData)
 			if err != nil {
 				return err
@@ -186,7 +211,7 @@ func (snow *SnowDataReader) doRemoveRecords(records []interface{}, lastTimeRecor
 	}
 
 	if len(recordsToBeRemoved) > 0 {
-		glog.Info("Last time records: %s with timestamp=%s. "+
+		glog.Infof("Last time records: %s with timestamp=%s. "+
 			"Remove collected records: %s with the same timestamp",
 			lastTimeRecords, lastRecordTime, recordsToBeRemoved)
 	}
@@ -283,7 +308,7 @@ func (snow *SnowDataReader) getCheckpoint() *collectionState {
 		return &snow.state
 	}
 
-	glog.Info("State is not in cache, reload from checkpoint")
+	glog.Infof("State is not in cache, reload from checkpoint")
 	ck, err := snow.checkpoint.GetCheckpoint(snow.AdditionalConfig)
 	if err != nil || ck == nil {
 		return nil
@@ -296,7 +321,7 @@ func (snow *SnowDataReader) getCheckpoint() *collectionState {
 		return nil
 	}
 
-	glog.Info("Checkpoint found, populate cache")
+	glog.Infof("Checkpoint found, populate cache")
 	snow.state = currentState
 
 	return &currentState
@@ -305,7 +330,7 @@ func (snow *SnowDataReader) getCheckpoint() *collectionState {
 func (snow *SnowDataReader) getNextRecordTime() string {
 	state := snow.getCheckpoint()
 	if state == nil {
-		glog.Info("Checkpoint not found, use intial configuration")
+		glog.Infof("Checkpoint not found, use intial configuration")
 		snow.state.NextRecordTime = snow.AdditionalConfig[nextRecordTimeKey]
 	}
 	return strings.Replace(snow.state.NextRecordTime, " ", "+", 1)

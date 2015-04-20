@@ -33,11 +33,11 @@ func NewScheduler() *Scheduler {
 
 func (sched *Scheduler) Start() {
 	if !atomic.CompareAndSwapInt32(&sched.started, 0, 1) {
-		glog.Info("Scheduler already started.")
+		glog.Infof("Scheduler already started.")
 		return
 	}
 	go sched.doJobs()
-	glog.Info("Scheduler started.")
+	glog.Infof("Scheduler started.")
 }
 
 func (sched *Scheduler) Stop() {
@@ -46,7 +46,7 @@ func (sched *Scheduler) Stop() {
 	}
 	sched.wakeupChan <- teardownNum
 	<-sched.doneChan
-	glog.Info("Scheduler exited.")
+	glog.Infof("Scheduler exited.")
 }
 
 func (sched *Scheduler) AddJobs(jobs []*Job) {
@@ -118,7 +118,7 @@ L:
 		}
 	}
 	sched.doneChan <- true
-	glog.Info("Scheduler is going to exit.")
+	glog.Infof("Scheduler is going to exit.")
 }
 
 func (sched *Scheduler) getReadyJobs() (sleep_time time.Duration, jobs []*Job) {

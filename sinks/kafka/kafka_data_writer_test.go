@@ -1,15 +1,21 @@
 package kafka
 
 import (
-	db "github.com/chenziliang/descartes/base"
+	"github.com/chenziliang/descartes/base"
 	"testing"
 	"time"
 )
 
 func TestKafkaDataWriter(t *testing.T) {
-	sinkConfig := []*db.BaseConfig{
-		&db.BaseConfig{
+	sinkConfig := []*base.BaseConfig{
+		&base.BaseConfig{
 			ServerURL: "172.16.107.153:9092",
+			AdditionalConfig: map[string]string{
+				"Topic": "DescartesTest",
+				"Key":   "MyKey",
+				"host":  "my.host.com",
+				"user":  "Ken Chen",
+			},
 		},
 	}
 	writer := NewKafkaDataWriter(sinkConfig)
@@ -25,9 +31,9 @@ func TestKafkaDataWriter(t *testing.T) {
 			"user":  "Ken Chen",
 		}
 		rawData := [][]byte{[]byte("sync:a=b,c=d,1=2,3=4"), []byte("sync:1=2,3=4,a=b,c=d")}
-		data := db.NewData(metaInfo, rawData)
+		data := base.NewData(metaInfo, rawData)
 		asyncrawData := [][]byte{[]byte("aysnc:a=b,c=d,1=2,3=4"), []byte("aysnc:1=2,3=4,a=b,c=d")}
-		asyncData := db.NewData(metaInfo, asyncrawData)
+		asyncData := base.NewData(metaInfo, asyncrawData)
 		writer.WriteDataSync(data)
 		writer.WriteDataAsync(asyncData)
 	}

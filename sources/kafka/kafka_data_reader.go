@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Shopify/sarama"
-	db "github.com/chenziliang/descartes/base"
+	"github.com/chenziliang/descartes/base"
 	"github.com/golang/glog"
+	"strconv"
 	"sync/atomic"
 	"time"
 )
@@ -18,22 +19,14 @@ type collectionState struct {
 	Offset        int64
 }
 
-type KafkaDataReaderConfig struct {
-	ConsumerGroup       string
-	Topic               string
-	Partition           int32
-	CheckpointTopic     string
-	CheckpointPartition int32
-}
-
 type KafkaDataReader struct {
-	client            *db.KafkaClient
-	writer            db.DataWriter
-	checkpoint        db.Checkpointer
+	client            *base.KafkaClient
+	writer            base.DataWriter
+	checkpoint        base.Checkpointer
 	master            sarama.Consumer
 	partitionConsumer sarama.PartitionConsumer
 	state             collectionState
-	config            KafkaDataReaderConfig
+	config            map[string]string
 	collecting        int32
 }
 
@@ -46,12 +39,9 @@ const (
 
 // NewKafaDataReader
 // FIXME support more config options
-func NewKafkaDataReader(client *db.KafkaClient, readerConfig KafkaDataReaderConfig, writer db.DataWriter,
-	checkpoint db.Checkpointer) *KafkaDataReader {
-	config := sarama.NewConfig()
-	config.Consumer.Return.Errors = true
-
-	topic, partition := readerConfig.Topic, readerConfig.Partition
+func NewKafkaDataReader(client *base.KafkaClient, config map[string]string,
+	writer base.DataWriter, checkpoint base.Checkpointer) *KafkaDataReader {
+	topic, partition := config[base.Topic], config[base.Partition]
 	master, err := sarama.NewConsumerFromClient(client.Client())
 	if err != nil {
 		glog.Errorf("Failed to create Kafka consumer, error=%s", err)
@@ -64,21 +54,18 @@ func NewKafkaDataReader(client *db.KafkaClient, readerConfig KafkaDataReaderConf
 		}
 	}()
 
-	keyInfo := map[string]string{
-		db.CheckpointTopic:     readerConfig.CheckpointTopic,
-		db.CheckpointPartition: fmt.Sprintf("%d", readerConfig.CheckpointPartition),
-	}
-
-	data, err := checkpoint.GetCheckpoint(keyInfo)
+	data, err := checkpoint.GetCheckpoint(config)
+	// FIXME checkpoint not exist
 	if err != nil {
-		return nil
+		//return nil
 	}
 
+	pid, _ := strconv.Atoi(partition)
 	state := collectionState{
 		Version:       "1",
-		ConsumerGroup: readerConfig.ConsumerGroup,
+		ConsumerGroup: config[base.ConsumerGroup],
 		Topic:         topic,
-		Partition:     partition,
+		Partition:     int32(pid),
 		Offset:        sarama.OffsetOldest,
 	}
 
@@ -88,9 +75,10 @@ func NewKafkaDataReader(client *db.KafkaClient, readerConfig KafkaDataReaderConf
 			return nil
 		}
 	}
+
 	// fmt.Println(fmt.Sprintf("Get offset=%d for consumer group=%s, topic=%s, partition=%d,", state.Offset, readerConfig.ConsumerGroup, topic, partition))
 
-	consumer, err := master.ConsumePartition(topic, partition, state.Offset)
+	consumer, err := master.ConsumePartition(topic, int32(pid), state.Offset)
 	if err != nil {
 		glog.Errorf("Failed to create Kafka partition consumer for topic=%s, partition=%d, error=%s", topic, partition, err)
 		return nil
@@ -103,25 +91,31 @@ func NewKafkaDataReader(client *db.KafkaClient, readerConfig KafkaDataReaderConf
 		master:            master,
 		partitionConsumer: consumer,
 		state:             state,
-		config:            readerConfig,
+		config:            config,
 		collecting:        initialStarted,
 	}
 }
 
 func (reader *KafkaDataReader) Start() {
 	if !atomic.CompareAndSwapInt32(&reader.collecting, initialStarted, started) {
-		glog.Info("KafkDataReader already started or stopped")
+		glog.Infof("KafkDataReader already started or stopped")
 		return
 	}
+	reader.writer.Start()
+	reader.checkpoint.Start()
+	glog.Infof("KafkDataReader started...")
 }
 
 func (reader *KafkaDataReader) Stop() {
 	if !atomic.CompareAndSwapInt32(&reader.collecting, started, stopped) {
-		glog.Info("KafkaDataReader already stopped")
+		glog.Infof("KafkaDataReader already stopped")
 		return
 	}
 	reader.master.Close()
 	reader.partitionConsumer.AsyncClose()
+	reader.writer.Stop()
+	reader.checkpoint.Stop()
+	glog.Infof("KafkDataReader stopped...")
 }
 
 func (reader *KafkaDataReader) CollectData() ([]byte, error) {
@@ -132,19 +126,15 @@ func (reader *KafkaDataReader) IndexData() error {
 	var (
 		n                               = 128
 		lastMsg *sarama.ConsumerMessage = nil
-		batchs                          = make([]*db.Data, 0, n)
-		keyInfo                         = map[string]string{
-			db.CheckpointTopic:     reader.config.CheckpointTopic,
-			db.CheckpointPartition: fmt.Sprintf("%d", reader.config.CheckpointPartition),
-		}
-		errMsg = "Failed to unmarshal msg, expect marshalled in JSON format of db.Data"
+		batchs                          = make([]*base.Data, 0, n)
+		errMsg                          = "Failed to unmarshal msg, expect marshalled in JSON format of base.Data"
 	)
 
-	f := func(msg *sarama.ConsumerMessage, msgs []*db.Data) []*db.Data {
+	f := func(msg *sarama.ConsumerMessage, msgs []*base.Data) []*base.Data {
 		for _, d := range msgs {
 			reader.writeData(msg.Topic, msg.Partition, msg.Offset, d)
 		}
-		reader.saveOffset(keyInfo, msg.Offset+1)
+		reader.saveOffset(msg.Offset + 1)
 		msgs = msgs[:0]
 		return msgs
 	}
@@ -156,11 +146,12 @@ func (reader *KafkaDataReader) IndexData() error {
 			if !ok {
 				glog.Errorf("Encounter error while collecting data, error=%s", err)
 			}
+
 		case msg, ok := <-reader.partitionConsumer.Messages():
 			if !ok {
 				break
 			}
-			var data db.Data
+			var data base.Data
 			err := json.Unmarshal(msg.Value, &data)
 			if err != nil {
 				glog.Errorf(errMsg)
@@ -185,7 +176,7 @@ func (reader *KafkaDataReader) IndexData() error {
 	return nil
 }
 
-func (reader *KafkaDataReader) writeData(topic string, partition int32, offset int64, data *db.Data) {
+func (reader *KafkaDataReader) writeData(topic string, partition int32, offset int64, data *base.Data) {
 	var i int
 	for i = 0; i < maxRetry; i++ {
 		err := reader.writer.WriteData(data)
@@ -202,7 +193,7 @@ func (reader *KafkaDataReader) writeData(topic string, partition int32, offset i
 	}
 }
 
-func (reader *KafkaDataReader) saveOffset(keyInfo map[string]string, offset int64) {
+func (reader *KafkaDataReader) saveOffset(offset int64) {
 	var newState collectionState = reader.state
 	newState.Offset = offset
 
@@ -215,7 +206,7 @@ func (reader *KafkaDataReader) saveOffset(keyInfo map[string]string, offset int6
 			continue
 		}
 
-		err = reader.checkpoint.WriteCheckpoint(keyInfo, data)
+		err = reader.checkpoint.WriteCheckpoint(reader.config, data)
 		if err != nil {
 			glog.Errorf(errMsg)
 		} else {

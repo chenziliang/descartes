@@ -3,34 +3,43 @@ package kafka
 import (
 	"encoding/json"
 	"github.com/Shopify/sarama"
-	db "github.com/chenziliang/descartes/base"
+	"github.com/chenziliang/descartes/base"
 	"github.com/golang/glog"
 	"sync/atomic"
 	"time"
 )
 
 type KafkaDataWriter struct {
-	brokers       []*db.BaseConfig
+	brokers       []*base.BaseConfig
 	asyncProducer sarama.AsyncProducer
 	syncProducer  sarama.SyncProducer
 	state         int32
 }
 
 const (
-	requireAcksKey    = "RequiredAcks"
-	flushFrequencyKey = "FlushFreqency"
-	topicKey          = "Topic"
-	keyKey            = "Key"
-	syncWriteKey      = "syncWrite"
-	stopped           = 0
-	initialStarted    = 1
-	started           = 2
+	stopped        = 0
+	initialStarted = 1
+	started        = 2
 )
 
 // NewKafaDataWriter
-// @BaseConfig.AdditionalConfig: contains flushFrequency
-// FIXME support more config options
-func NewKafkaDataWriter(brokers []*db.BaseConfig) db.DataWriter {
+// @BaseConfig.AdditionalConfig: contains
+// base.Topic, base.Key which indicates where to write the data to Kafka
+// base.RequireAcks, base.FlushMemory, base.SyncWrite Kafka producer options
+
+func NewKafkaDataWriter(brokers []*base.BaseConfig) base.DataWriter {
+	if len(brokers) == 0 {
+		glog.Errorf("Empty configs passed in")
+		return nil
+	}
+
+	for _, k := range []string{base.Topic, base.Key} {
+		if _, ok := brokers[0].AdditionalConfig[k]; !ok {
+			glog.Errorf("%s config is required", k)
+			return nil
+		}
+	}
+
 	config := sarama.NewConfig()
 	config.Producer.RequiredAcks = sarama.WaitForLocal
 	config.Producer.Flush.Frequency = 500 * time.Millisecond
@@ -62,7 +71,7 @@ func NewKafkaDataWriter(brokers []*db.BaseConfig) db.DataWriter {
 
 func (writer *KafkaDataWriter) Start() {
 	if !atomic.CompareAndSwapInt32(&writer.state, initialStarted, started) {
-		glog.Info("KafkaDataWriter already started or stopped")
+		glog.Infof("KafkaDataWriter already started or stopped")
 		return
 	}
 
@@ -71,42 +80,44 @@ func (writer *KafkaDataWriter) Start() {
 			glog.Errorf("Kafka AsyncProducer encounter error=%s", err)
 		}
 	}()
+	glog.Infof("KafkaDataWriter started...")
 }
 
 func (writer *KafkaDataWriter) Stop() {
 	if !atomic.CompareAndSwapInt32(&writer.state, started, stopped) {
-		glog.Info("KafkaDataWriter already stopped")
+		glog.Infof("KafkaDataWriter already stopped")
 		return
 	}
 
 	writer.syncProducer.Close()
 	writer.asyncProducer.AsyncClose()
+	glog.Infof("KafkaDataWriter stopped...")
 }
 
-func (writer *KafkaDataWriter) WriteData(data *db.Data) error {
-	if writer.brokers[0].AdditionalConfig[syncWriteKey] == "1" {
+func (writer *KafkaDataWriter) WriteData(data *base.Data) error {
+	if writer.brokers[0].AdditionalConfig[base.SyncWrite] == "1" {
 		return writer.WriteDataSync(data)
 	} else {
 		return writer.WriteDataAsync(data)
 	}
 }
 
-func (writer *KafkaDataWriter) prepareData(data *db.Data) (*sarama.ProducerMessage, error) {
+func (writer *KafkaDataWriter) prepareData(data *base.Data) (*sarama.ProducerMessage, error) {
 	payload, err := json.Marshal(data)
 	if err != nil {
-		glog.Errorf("Failed to marshal db.Data object, error=%s", err)
+		glog.Errorf("Failed to marshal base.Data object, error=%s", err)
 		return nil, err
 	}
 
 	msg := &sarama.ProducerMessage{
-		Topic: data.MetaInfo[topicKey],
-		Key:   sarama.StringEncoder(data.MetaInfo[keyKey]),
+		Topic: writer.brokers[0].AdditionalConfig[base.Topic],
+		Key:   sarama.StringEncoder(writer.brokers[0].AdditionalConfig[base.Key]),
 		Value: sarama.StringEncoder(payload),
 	}
 	return msg, err
 }
 
-func (writer *KafkaDataWriter) WriteDataAsync(data *db.Data) error {
+func (writer *KafkaDataWriter) WriteDataAsync(data *base.Data) error {
 	msg, err := writer.prepareData(data)
 	if err != nil {
 		return err
@@ -115,7 +126,7 @@ func (writer *KafkaDataWriter) WriteDataAsync(data *db.Data) error {
 	return nil
 }
 
-func (writer *KafkaDataWriter) WriteDataSync(data *db.Data) error {
+func (writer *KafkaDataWriter) WriteDataSync(data *base.Data) error {
 	msg, err := writer.prepareData(data)
 	if err != nil {
 		return err

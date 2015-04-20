@@ -19,9 +19,11 @@ func NewFileCheckpointer() Checkpointer {
 }
 
 func (ck *FileCheckpointer) Start() {
+	glog.Infof("FileCheckpointer started...")
 }
 
 func (ck *FileCheckpointer) Stop() {
+	glog.Infof("FileCheckpointer stopped...")
 }
 
 // @keyInfo: contains "CheckpointDir", "CheckpointNamespace", "CheckpointKey"

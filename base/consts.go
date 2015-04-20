@@ -1,9 +1,27 @@
 package base
 
 const (
+	ServerURL           = "ServerURL"
+	Username            = "Username"
+	Password            = "Password"
+	ProxyURL            = "ProxyURL"
+	ProxyUsername       = "ProxyUsername"
+	ProxyPassword       = "ProxyPassword"
 	CheckpointDir       = "CheckpointDir"
 	CheckpointNamespace = "CheckpointNamespace"
 	CheckpointKey       = "CheckpointKey"
 	CheckpointTopic     = "CheckpointTopic"
 	CheckpointPartition = "CheckpointPartition"
+	ConsumerGroup       = "ConsumerGroup"
+	Topic               = "Topic"
+	Partition           = "Partition"
+	Key                 = "Key"
+	RequireAcks         = "RequiredAcks"
+	FlushFrequency      = "FlushFreqency"
+	SyncWrite           = "SyncWrite"
+	Host                = "host"
+	HostRegex           = "host_regex"
+	Index               = "index"
+	Source              = "source"
+	Sourcetype          = "sourcetype"
 )
