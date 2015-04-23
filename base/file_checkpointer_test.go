@@ -19,9 +19,9 @@ func TestCheckpointer(t *testing.T) {
 	}
 
 	ck := NewFileCheckpointer()
-	_, err := ck.GetCheckpoint(keyInfo)
-	if err == nil {
-		t.Error("GetCheckpoint should error out, but got no error")
+	data, err := ck.GetCheckpoint(keyInfo)
+	if data != nil || err != nil {
+		t.Error("GetCheckpoint should not error out, but got error=%s or data=%s", err, data)
 	}
 
 	p := person{
@@ -36,7 +36,7 @@ func TestCheckpointer(t *testing.T) {
 		t.Errorf("WriteCheckpoint should have no error, but got error=%v", err)
 	}
 
-	data, err := ck.GetCheckpoint(keyInfo)
+	data, err = ck.GetCheckpoint(keyInfo)
 	if err != nil {
 		t.Errorf("GetCheckpoint got error=%s", err)
 	}

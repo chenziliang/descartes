@@ -134,7 +134,6 @@ func (writer *KafkaDataWriter) WriteDataSync(data *base.Data) error {
 
 	_, _, err = writer.syncProducer.SendMessage(msg)
 	// FIXME retry other brokers when failed ?
-	// glog.Errorf("topic=%s, partition=%d, offset=%d, error=%s", msg.Topic, partition, offset, err)
 	if err != nil {
 		glog.Errorf("Failed to write data to kafka for topic=%s, partition=%d, key=%s, error=%s",
 			msg.Topic, msg.Partition, msg.Key, err)

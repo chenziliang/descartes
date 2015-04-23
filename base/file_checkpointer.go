@@ -29,6 +29,10 @@ func (ck *FileCheckpointer) Stop() {
 // @keyInfo: contains "CheckpointDir", "CheckpointNamespace", "CheckpointKey"
 func (ck *FileCheckpointer) GetCheckpoint(keyInfo map[string]string) ([]byte, error) {
 	ckFileName := filepath.Join(keyInfo[CheckpointDir], keyInfo[CheckpointNamespace]+"_"+keyInfo[CheckpointKey]+checkpointFilePostfix)
+	if _, err := os.Stat(ckFileName); os.IsNotExist(err) {
+		return nil, nil
+	}
+
 	content, err := ioutil.ReadFile(ckFileName)
 	if err != nil {
 		glog.Errorf("Failed to get checkpoint from %s, error=%s", ckFileName, err)

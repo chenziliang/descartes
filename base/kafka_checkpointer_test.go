@@ -13,7 +13,7 @@ func TestKafkaCheckponter(t *testing.T) {
 	client := NewKafkaClient(brokerConfigs, "consumerClient")
 
 	keyInfo := map[string]string{
-		CheckpointTopic:     "CheckpointTestTopic",
+		CheckpointTopic:     "CheckpointTestTopic2",
 		CheckpointPartition: "0",
 		CheckpointKey:       "",
 	}

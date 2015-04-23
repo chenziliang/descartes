@@ -3,17 +3,18 @@ package base
 import (
 	"github.com/Shopify/sarama"
 	"github.com/golang/glog"
+	"strings"
 	"time"
 )
 
 type KafkaClient struct {
-	brokerConfigs   []BaseConfig
-	client          sarama.Client
-	topicPartitions map[string][]int32
+	brokerConfigs []BaseConfig
+	client        sarama.Client
 }
 
 const (
-	maxRetry = 10
+	maxRetry                 = 10
+	topicOrPartitionNotExist = -10
 )
 
 func NewKafkaClient(brokerConfigs []BaseConfig, clientName string) *KafkaClient {
@@ -63,12 +64,13 @@ func (client *KafkaClient) TopicPartitions(topic string) (map[string][]int32, er
 		partitions, err := client.client.Partitions(topic)
 		if err != nil {
 			glog.Errorf("Failed to get partitions for topic=%s from Kafka, error=%s", topic, err)
+			continue
 		}
 
-		_, ok := topicPartitions[topic]
-		if !ok {
+		if _, ok := topicPartitions[topic]; !ok {
 			topicPartitions[topic] = make([]int32, 0, len(partitions))
 		}
+
 		for _, partition := range partitions {
 			topicPartitions[topic] = append(topicPartitions[topic], partition)
 		}
@@ -77,8 +79,6 @@ func (client *KafkaClient) TopicPartitions(topic string) (map[string][]int32, er
 	if len(topicPartitions) == 0 {
 		return nil, err
 	}
-	// race condition
-	client.topicPartitions = topicPartitions
 	return topicPartitions, nil
 }
 
@@ -113,10 +113,11 @@ func (client *KafkaClient) GetConsumerOffset(consumerGroup string,
 	return offset, nil
 }
 
+// Return: OffsetNotExist
 func (client *KafkaClient) GetProducerOffset(topic string, partition int32) (int64, error) {
 	leader, err := client.Leader(topic, partition)
-	if err != nil {
-		return 0, err
+	if err != nil || leader == nil {
+		return topicOrPartitionNotExist, err
 	}
 
 	ofreq := &sarama.OffsetRequest{}
@@ -132,9 +133,14 @@ func (client *KafkaClient) GetProducerOffset(topic string, partition int32) (int
 	return oresp.GetBlock(topic, partition).Offsets[0], nil
 }
 
+// @Return (position, nil) if no errors
+// (nil, nil) if topic or partition etc doesn't exist
+// (nil, err) for other errors
 func (client *KafkaClient) GetLastBlock(topic string, partition int32) ([]byte, error) {
 	lastOffset, err := client.GetProducerOffset(topic, partition)
-	if err != nil {
+	if lastOffset == topicOrPartitionNotExist {
+		return nil, nil
+	} else if err != nil {
 		return nil, err
 	}
 
@@ -177,13 +183,11 @@ func (client *KafkaClient) Leader(topic string, partition int32) (*sarama.Broker
 		leader, err = client.client.Leader(topic, partition)
 		if err != nil {
 			glog.Errorf("Failed to get leader for topic=%s, partition=%d, error=%s", topic, partition, err)
-			if client.topicPartitions != nil {
-				// Fast break out if topic doesn't exist
-				_, ok := client.topicPartitions[topic]
-				if !ok {
-					return nil, err
-				}
+			// Fast break out if topic doesn't exist
+			if strings.Contains(err.Error(), "does not exist") {
+				return nil, nil
 			}
+
 			time.Sleep(time.Second)
 		} else {
 			return leader, err

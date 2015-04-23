@@ -44,7 +44,7 @@ const (
 // @config: shall contain snow "ServerURL", "Username", "Password" "Endpoint", "TimestampField"
 // "NextRecordTime", "RecordCount" key/values
 func NewSnowDataReader(
-	config base.BaseConfig, writer base.DataWriter, checkpointer base.Checkpointer) *SnowDataReader {
+	config base.BaseConfig, writer base.DataWriter, checkpoint base.Checkpointer) *SnowDataReader {
 	acquiredConfigs := []string{base.ServerURL, base.Username, base.Password,
 		endpointKey, timestampFieldKey, nextRecordTimeKey, recordCountKey}
 	for _, key := range acquiredConfigs {
@@ -54,11 +54,17 @@ func NewSnowDataReader(
 		}
 	}
 
+	state := getCheckpoint(checkpoint, config)
+	if state == nil {
+		return nil
+	}
+
 	return &SnowDataReader{
 		config:      config,
 		writer:      writer,
-		checkpoint:  checkpointer,
+		checkpoint:  checkpoint,
 		http_client: &http.Client{Timeout: 120 * time.Second},
+		state:       *state,
 		collecting:  0,
 		started:     0,
 	}
@@ -161,9 +167,8 @@ func (snow *SnowDataReader) IndexData() error {
 			endpointKey:    snow.config[endpointKey],
 		}
 		records, refreshed := snow.removeCollectedRecords(records)
-		allData := base.NewData(metaInfo, make([][]byte, len(records)))
+		allData := base.NewData(metaInfo, make([][]byte, 1))
 		var record []string
-		// FIXME Batch
 		for i := 0; i < len(records); i++ {
 			record = record[:0]
 			for k, v := range records[i].(map[string]interface{}) {
@@ -171,18 +176,13 @@ func (snow *SnowDataReader) IndexData() error {
 			}
 			allData.RawData = append(allData.RawData, []byte(strings.Join(record, ",")))
 			err := snow.writer.WriteData(allData)
-			allData.RawData = allData.RawData[:0]
-			// FIXME
 			if err != nil {
 				return err
 			}
+			allData.RawData = allData.RawData[:0]
 		}
 
 		if len(records) > 0 {
-			// err := snow.writer.WriteData(allData)
-			if err != nil {
-				return err
-			}
 			return snow.writeCheckpoint(records, refreshed)
 		}
 	} else if errDesc, ok := jobj["error"]; ok {
@@ -226,18 +226,16 @@ func (snow *SnowDataReader) doRemoveRecords(records []interface{}, lastTimeRecor
 }
 
 func (snow *SnowDataReader) removeCollectedRecords(records []interface{}) ([]interface{}, bool) {
-	ck := snow.getCheckpoint()
-	// FIXME check nullness of ck for error
-	if ck == nil || len(ck.LastTimeRecords) == 0 || len(records) == 0 {
+	if len(snow.state.LastTimeRecords) == 0 || len(records) == 0 {
 		return records, false
 	}
 
-	lastTimeRecords := make(map[string]bool, len(ck.LastTimeRecords))
-	for i := 0; i < len(ck.LastTimeRecords); i++ {
-		lastTimeRecords[ck.LastTimeRecords[i]] = true
+	lastTimeRecords := make(map[string]bool, len(snow.state.LastTimeRecords))
+	for i := 0; i < len(snow.state.LastTimeRecords); i++ {
+		lastTimeRecords[snow.state.LastTimeRecords[i]] = true
 	}
 
-	lastRecordTime := ck.NextRecordTime
+	lastRecordTime := snow.state.NextRecordTime
 	recordsToBeIndexed := snow.doRemoveRecords(records, lastTimeRecords, lastRecordTime)
 
 	refreshed := false
@@ -310,35 +308,30 @@ func (snow *SnowDataReader) writeCheckpoint(records []interface{}, refreshed boo
 	return nil
 }
 
-func (snow *SnowDataReader) getCheckpoint() *collectionState {
-	if snow.state.NextRecordTime != "" {
-		return &snow.state
-	}
-
-	glog.Infof("State is not in cache, reload from checkpoint")
-	ck, err := snow.checkpoint.GetCheckpoint(snow.config)
-	if err != nil || ck == nil {
-		return nil
-	}
-
-	var currentState collectionState
-	err = json.Unmarshal(ck, &currentState)
-	if err != nil {
-		glog.Errorf("Failed to unmarshal checkpoint, error=%s", err)
-		return nil
-	}
-
-	glog.Infof("Checkpoint found, populate cache")
-	snow.state = currentState
-
-	return &currentState
+func (snow *SnowDataReader) getNextRecordTime() string {
+	return strings.Replace(snow.state.NextRecordTime, " ", "+", 1)
 }
 
-func (snow *SnowDataReader) getNextRecordTime() string {
-	state := snow.getCheckpoint()
-	if state == nil {
-		glog.Infof("Checkpoint not found, use intial configuration")
-		snow.state.NextRecordTime = snow.config[nextRecordTimeKey]
+func getCheckpoint(checkpoint base.Checkpointer, config base.BaseConfig) *collectionState {
+	glog.Infof("State is not in cache, reload from checkpoint")
+	data, err := checkpoint.GetCheckpoint(config)
+	if err != nil {
+		return nil
 	}
-	return strings.Replace(snow.state.NextRecordTime, " ", "+", 1)
+
+	state := collectionState{
+		Version:         "1",
+		NextRecordTime:  config[nextRecordTimeKey],
+		LastTimeRecords: []string{},
+	}
+
+	if data != nil {
+		err = json.Unmarshal(data, &state)
+		if err != nil {
+			glog.Errorf("Failed to unmarshal data=%s, doesn't conform colllectionState", string(data))
+			return nil
+		}
+	}
+
+	return &state
 }
