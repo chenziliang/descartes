@@ -11,7 +11,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"splunk123",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -24,7 +25,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"splunk123",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -37,7 +39,8 @@
             "TimestampField":"time_of_event",
             "Password":"splunk123",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -50,7 +53,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"splunk123",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -63,7 +67,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"splunk123",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -76,7 +81,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"splunk123",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -89,7 +95,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"splunk123",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -102,7 +109,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"splunk123",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -115,7 +123,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"splunk123",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -128,7 +137,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"splunk123",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -141,7 +151,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"splunk123",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -154,7 +165,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"splunk123",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -167,7 +179,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"splunk123",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -180,7 +193,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"splunk123",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -193,7 +207,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"splunk123",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -206,7 +221,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"splunk123",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -219,7 +235,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"splunk123",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -232,7 +249,8 @@
             "TimestampField":"sys_created_on",
             "Password":"splunk123",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -245,7 +263,8 @@
             "TimestampField":"sys_created_on",
             "Password":"splunk123",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -258,7 +277,8 @@
             "TimestampField":"sys_created_on",
             "Password":"splunk123",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -271,7 +291,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"6DVbQtndiCUv",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -284,7 +305,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"6DVbQtndiCUv",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -297,7 +319,8 @@
             "TimestampField":"time_of_event",
             "Password":"6DVbQtndiCUv",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -310,7 +333,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"6DVbQtndiCUv",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -323,7 +347,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"6DVbQtndiCUv",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -336,7 +361,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"6DVbQtndiCUv",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -349,7 +375,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"6DVbQtndiCUv",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -362,7 +389,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"6DVbQtndiCUv",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -375,7 +403,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"6DVbQtndiCUv",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -388,7 +417,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"6DVbQtndiCUv",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -401,7 +431,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"6DVbQtndiCUv",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -414,7 +445,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"6DVbQtndiCUv",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -427,7 +459,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"6DVbQtndiCUv",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -440,7 +473,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"6DVbQtndiCUv",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -453,7 +487,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"6DVbQtndiCUv",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -466,7 +501,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"6DVbQtndiCUv",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -479,7 +515,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"6DVbQtndiCUv",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -492,7 +529,8 @@
             "TimestampField":"sys_created_on",
             "Password":"6DVbQtndiCUv",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -505,7 +543,8 @@
             "TimestampField":"sys_created_on",
             "Password":"6DVbQtndiCUv",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -518,7 +557,8 @@
             "TimestampField":"sys_created_on",
             "Password":"6DVbQtndiCUv",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -531,7 +571,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"b9CQn4paMYWp",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -544,7 +585,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"b9CQn4paMYWp",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -557,7 +599,8 @@
             "TimestampField":"time_of_event",
             "Password":"b9CQn4paMYWp",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -570,7 +613,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"b9CQn4paMYWp",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -583,7 +627,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"b9CQn4paMYWp",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -596,7 +641,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"b9CQn4paMYWp",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -609,7 +655,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"b9CQn4paMYWp",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -622,7 +669,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"b9CQn4paMYWp",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -635,7 +683,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"b9CQn4paMYWp",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -648,7 +697,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"b9CQn4paMYWp",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -661,7 +711,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"b9CQn4paMYWp",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -674,7 +725,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"b9CQn4paMYWp",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -687,7 +739,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"b9CQn4paMYWp",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -700,7 +753,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"b9CQn4paMYWp",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -713,7 +767,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"b9CQn4paMYWp",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -726,7 +781,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"b9CQn4paMYWp",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -739,7 +795,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"b9CQn4paMYWp",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -752,7 +809,8 @@
             "TimestampField":"sys_created_on",
             "Password":"b9CQn4paMYWp",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -765,7 +823,8 @@
             "TimestampField":"sys_created_on",
             "Password":"b9CQn4paMYWp",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -778,7 +837,8 @@
             "TimestampField":"sys_created_on",
             "Password":"b9CQn4paMYWp",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -791,7 +851,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"7RowgWED34FQ",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -804,7 +865,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"7RowgWED34FQ",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -817,7 +879,8 @@
             "TimestampField":"time_of_event",
             "Password":"7RowgWED34FQ",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -830,7 +893,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"7RowgWED34FQ",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -843,7 +907,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"7RowgWED34FQ",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -856,7 +921,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"7RowgWED34FQ",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -869,7 +935,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"7RowgWED34FQ",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -882,7 +949,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"7RowgWED34FQ",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -895,7 +963,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"7RowgWED34FQ",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -908,7 +977,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"7RowgWED34FQ",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -921,7 +991,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"7RowgWED34FQ",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -934,7 +1005,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"7RowgWED34FQ",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -947,7 +1019,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"7RowgWED34FQ",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -960,7 +1033,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"7RowgWED34FQ",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -973,7 +1047,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"7RowgWED34FQ",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -986,7 +1061,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"7RowgWED34FQ",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -999,7 +1075,8 @@
             "TimestampField":"sys_updated_on",
             "Password":"7RowgWED34FQ",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -1012,7 +1089,8 @@
             "TimestampField":"sys_created_on",
             "Password":"7RowgWED34FQ",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -1025,7 +1103,8 @@
             "TimestampField":"sys_created_on",
             "Password":"7RowgWED34FQ",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         },
         {
             "Username":"admin",
@@ -1038,7 +1117,8 @@
             "TimestampField":"sys_created_on",
             "Password":"7RowgWED34FQ",
             "NextRecordTime":"2014-01-01+00:00:00",
-            "interval": "60"
+            "Interval": "60",
+            "Brokers": "172.16.107.153:9092"
         }
     ]
 }

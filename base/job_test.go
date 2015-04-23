@@ -20,7 +20,7 @@ func TestJob(t *testing.T) {
 		}
 	}
 
-	jobChan := make(chan []*Job, 4)
+	jobChan := make(chan []Job, 4)
 	for i := 0; i < p; i++ {
 		go func() {
 			j := buildJobs(n)

@@ -1,0 +1,12 @@
+{
+    "kafka": [
+        {
+            "Brokers": "172.16.107.153:9092",
+            "ServerURL": "https://localhost:8089",
+            "Username": "admin",
+            "Password": "admin",
+            "Index": "main",
+            "Source": "descartes"
+        }
+    ]
+}

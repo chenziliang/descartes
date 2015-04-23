@@ -37,19 +37,25 @@ func (sched *Scheduler) Start() {
 		return
 	}
 	go sched.doJobs()
-	glog.Infof("Scheduler started.")
+	glog.Infof("Scheduler started...")
 }
 
 func (sched *Scheduler) Stop() {
 	if !atomic.CompareAndSwapInt32(&sched.started, 1, 0) {
+		glog.Infof("Scheduler already stopped.")
 		return
 	}
 	sched.wakeupChan <- teardownNum
 	<-sched.doneChan
-	glog.Infof("Scheduler exited.")
+	pivot := NewJob(JobFunc(nil), -1, 0, nil)
+	sched.jobs.AscendGreaterOrEqual(pivot, func(i llrb.Item) bool {
+		i.(Job).Stop()
+		return true
+	})
+	glog.Infof("Scheduler stopped...")
 }
 
-func (sched *Scheduler) AddJobs(jobs []*Job) {
+func (sched *Scheduler) AddJobs(jobs []Job) {
 	sched.lockGuard.Lock()
 	defer sched.lockGuard.Unlock()
 
@@ -66,12 +72,13 @@ func (sched *Scheduler) AddJobs(jobs []*Job) {
 		}
 		job.SetIntialExpirationTime(now + int64(d))
 		sched.jobs.InsertNoReplace(job)
+		job.Start()
 	}
 
 	sched.wakeUp()
 }
 
-func (sched *Scheduler) UpdateJobs(jobs []*Job) {
+func (sched *Scheduler) UpdateJobs(jobs []Job) {
 	sched.lockGuard.Lock()
 	defer sched.lockGuard.Unlock()
 
@@ -82,7 +89,7 @@ func (sched *Scheduler) UpdateJobs(jobs []*Job) {
 	sched.wakeUp()
 }
 
-func (sched *Scheduler) RemoveJobs(jobs []*Job) {
+func (sched *Scheduler) RemoveJobs(jobs []Job) {
 	sched.lockGuard.Lock()
 	defer sched.lockGuard.Unlock()
 
@@ -121,17 +128,17 @@ L:
 	glog.Infof("Scheduler is going to exit.")
 }
 
-func (sched *Scheduler) getReadyJobs() (sleep_time time.Duration, jobs []*Job) {
+func (sched *Scheduler) getReadyJobs() (sleep_time time.Duration, jobs []Job) {
 	sleep_time = time.Second / 10
-	var readyJobs []*Job
-	var job *Job
+	var readyJobs []Job
+	var job Job
 
 	sched.lockGuard.Lock()
 	defer sched.lockGuard.Unlock()
 
 	now := time.Now().UnixNano()
 	for sched.jobs.Len() > 0 {
-		job = sched.jobs.Min().(*Job)
+		job = sched.jobs.Min().(Job)
 		if job.ExpirationTime() < now {
 			readyJobs = append(readyJobs, job)
 			sched.jobs.DeleteMin()
@@ -148,15 +155,15 @@ func (sched *Scheduler) getReadyJobs() (sleep_time time.Duration, jobs []*Job) {
 	}
 
 	if sched.jobs.Len() > 0 {
-		job = sched.jobs.Min().(*Job)
+		job = sched.jobs.Min().(Job)
 		sleep_time = time.Duration(job.ExpirationTime() - now)
 	}
 
 	return sleep_time, readyJobs
 }
 
-func (sched *Scheduler) executeJobs(jobs []*Job) {
+func (sched *Scheduler) executeJobs(jobs []Job) {
 	for _, job := range jobs {
-		job.f()
+		job.Callback()
 	}
 }

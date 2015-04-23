@@ -3,6 +3,6 @@ package base
 type DataReader interface {
 	Start()
 	Stop()
-	ReadData() error
+	ReadData() ([]byte, error)
 	IndexData() error
 }

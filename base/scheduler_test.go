@@ -8,14 +8,14 @@ import (
 	"time"
 )
 
-func test(n int, id int) Func {
+func test(n int, id int) JobFunc {
 	return func() error {
 		// fmt.Println(fmt.Sprintf("id=%d call every %d second.", id, n))
 		return nil
 	}
 }
 
-func buildLLRBTree(jobs []*Job) *llrb.LLRB {
+func buildLLRBTree(jobs []Job) *llrb.LLRB {
 	now := time.Now().Unix()
 
 	tree := llrb.New()
@@ -26,14 +26,14 @@ func buildLLRBTree(jobs []*Job) *llrb.LLRB {
 	return tree
 }
 
-func buildJobs(n int) []*Job {
+func buildJobs(n int) []Job {
 	now := time.Now().UnixNano()
 
 	src := rand.NewSource(now)
 	r := rand.New(src)
 
 	s := int64(time.Second)
-	jobs := make([]*Job, 0, n)
+	jobs := make([]Job, 0, n)
 	for i := 0; i < n; i++ {
 		job := NewJob(test(i+1, i), 0, int64(s*(int64(r.Int())%3600+1)),
 			make(map[string]string))
@@ -43,11 +43,11 @@ func buildJobs(n int) []*Job {
 	return jobs
 }
 
-func buildJobsNoRand(n int) []*Job {
+func buildJobsNoRand(n int) []Job {
 	now := time.Now().Unix()
 
 	s := int64(time.Second)
-	jobs := make([]*Job, 0, n)
+	jobs := make([]Job, 0, n)
 	for i := 0; i < n; i++ {
 		interval := i%3600 + 1
 		job := NewJob(test(interval, i+1), 0,

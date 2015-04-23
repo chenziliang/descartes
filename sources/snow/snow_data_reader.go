@@ -23,7 +23,7 @@ type collectionState struct {
 }
 
 type SnowDataReader struct {
-	*base.BaseConfig
+	config      base.BaseConfig
 	writer      base.DataWriter
 	checkpoint  base.Checkpointer
 	http_client *http.Client
@@ -41,20 +41,21 @@ const (
 )
 
 // NewSnowDataReader
-// @config.AdditionalConfig: shall contain snow "Endpoint", "TimestampField"
+// @config: shall contain snow "ServerURL", "Username", "Password" "Endpoint", "TimestampField"
 // "NextRecordTime", "RecordCount" key/values
 func NewSnowDataReader(
-	config *base.BaseConfig, writer base.DataWriter, checkpointer base.Checkpointer) *SnowDataReader {
-	acquiredConfigs := []string{endpointKey, timestampFieldKey, nextRecordTimeKey}
+	config base.BaseConfig, writer base.DataWriter, checkpointer base.Checkpointer) *SnowDataReader {
+	acquiredConfigs := []string{base.ServerURL, base.Username, base.Password,
+		endpointKey, timestampFieldKey, nextRecordTimeKey, recordCountKey}
 	for _, key := range acquiredConfigs {
-		if _, ok := config.AdditionalConfig[key]; !ok {
+		if _, ok := config[key]; !ok {
 			glog.Errorf("%s is missing. It is required by Snow data collection", key)
 			return nil
 		}
 	}
 
 	return &SnowDataReader{
-		BaseConfig:  config,
+		config:      config,
 		writer:      writer,
 		checkpoint:  checkpointer,
 		http_client: &http.Client{Timeout: 120 * time.Second},
@@ -89,20 +90,20 @@ func (snow *SnowDataReader) Stop() {
 func (snow *SnowDataReader) getURL() string {
 	nextRecordTime := snow.getNextRecordTime()
 	var buffer bytes.Buffer
-	buffer.WriteString(snow.ServerURL)
+	buffer.WriteString(snow.config[base.ServerURL])
 	buffer.WriteString("/")
-	buffer.WriteString(snow.AdditionalConfig[endpointKey])
+	buffer.WriteString(snow.config[endpointKey])
 	buffer.WriteString(".do?JSONv2&sysparm_query=")
-	buffer.WriteString(snow.AdditionalConfig[timestampFieldKey])
+	buffer.WriteString(snow.config[timestampFieldKey])
 	buffer.WriteString(">=")
 	buffer.WriteString(nextRecordTime)
 	buffer.WriteString("^ORDERBY")
-	buffer.WriteString(snow.AdditionalConfig[timestampFieldKey])
-	buffer.WriteString("&sysparm_record_count=" + snow.AdditionalConfig[recordCountKey])
+	buffer.WriteString(snow.config[timestampFieldKey])
+	buffer.WriteString("&sysparm_record_count=" + snow.config[recordCountKey])
 	return buffer.String()
 }
 
-func (snow *SnowDataReader) CollectData() ([]byte, error) {
+func (snow *SnowDataReader) ReadData() ([]byte, error) {
 	if !atomic.CompareAndSwapInt32(&snow.collecting, 0, 1) {
 		glog.Infof("Last data collection for %s has not been done", snow.getURL())
 		return nil, nil
@@ -118,7 +119,7 @@ func (snow *SnowDataReader) CollectData() ([]byte, error) {
 
 	req.Header.Add("Accept-Encoding", "gzip")
 	req.Header.Add("Accept", "application/json")
-	req.SetBasicAuth(snow.Username, snow.Password)
+	req.SetBasicAuth(snow.config[base.Username], snow.config[base.Password])
 
 	resp, err := snow.http_client.Do(req)
 	if err != nil {
@@ -143,7 +144,7 @@ func (snow *SnowDataReader) CollectData() ([]byte, error) {
 }
 
 func (snow *SnowDataReader) IndexData() error {
-	data, err := snow.CollectData()
+	data, err := snow.ReadData()
 	if data == nil || err != nil {
 		return err
 	}
@@ -155,24 +156,30 @@ func (snow *SnowDataReader) IndexData() error {
 
 	if records, ok := jobj["records"].([]interface{}); ok {
 		metaInfo := map[string]string{
-			base.ServerURL: snow.ServerURL,
-			base.Username:  snow.Username,
-			endpointKey:    snow.AdditionalConfig[endpointKey],
+			base.ServerURL: snow.config[base.ServerURL],
+			base.Username:  snow.config[base.Username],
+			endpointKey:    snow.config[endpointKey],
 		}
 		records, refreshed := snow.removeCollectedRecords(records)
 		allData := base.NewData(metaInfo, make([][]byte, len(records)))
 		var record []string
+		// FIXME Batch
 		for i := 0; i < len(records); i++ {
 			record = record[:0]
 			for k, v := range records[i].(map[string]interface{}) {
 				record = append(record, fmt.Sprintf(`%s="%s"`, k, v))
 			}
 			allData.RawData = append(allData.RawData, []byte(strings.Join(record, ",")))
+			err := snow.writer.WriteData(allData)
+			allData.RawData = allData.RawData[:0]
+			// FIXME
+			if err != nil {
+				return err
+			}
 		}
 
 		if len(records) > 0 {
-			glog.Infof("indexing data into kafka")
-			err := snow.writer.WriteData(allData)
+			// err := snow.writer.WriteData(allData)
 			if err != nil {
 				return err
 			}
@@ -189,7 +196,7 @@ func (snow *SnowDataReader) doRemoveRecords(records []interface{}, lastTimeRecor
 	lastRecordTime string) []interface{} {
 	var recordsToBeRemoved []string
 	var recordsToBeIndexed []interface{}
-	timefield := snow.AdditionalConfig[timestampFieldKey]
+	timefield := snow.config[timestampFieldKey]
 
 	for i := 0; i < len(records); i++ {
 		r, ok := records[i].(map[string]interface{})
@@ -211,7 +218,7 @@ func (snow *SnowDataReader) doRemoveRecords(records []interface{}, lastTimeRecor
 	}
 
 	if len(recordsToBeRemoved) > 0 {
-		glog.Infof("Last time records: %s with timestamp=%s. "+
+		glog.Infof("Last time records: %+v with timestamp=%s. "+
 			"Remove collected records: %s with the same timestamp",
 			lastTimeRecords, lastRecordTime, recordsToBeRemoved)
 	}
@@ -234,12 +241,12 @@ func (snow *SnowDataReader) removeCollectedRecords(records []interface{}) ([]int
 	recordsToBeIndexed := snow.doRemoveRecords(records, lastTimeRecords, lastRecordTime)
 
 	refreshed := false
-	recordCount, _ := strconv.Atoi(snow.AdditionalConfig[recordCountKey])
+	recordCount, _ := strconv.Atoi(snow.config[recordCountKey])
 
 	if len(records) == recordCount {
 		firstRecord := records[0].(map[string]interface{})
 		lastRecord := records[len(records)-1].(map[string]interface{})
-		timefield := snow.AdditionalConfig[timestampFieldKey]
+		timefield := snow.config[timestampFieldKey]
 		if firstRecord[timefield] == lastRecord[timefield] {
 			// Run into a rare situtaion that there are more than recordCount
 			// records with the same timestamp. If this happens, move forward
@@ -267,7 +274,7 @@ func (snow *SnowDataReader) writeCheckpoint(records []interface{}, refreshed boo
 		return nil
 	}
 
-	timefield := snow.AdditionalConfig[timestampFieldKey]
+	timefield := snow.config[timestampFieldKey]
 	lastRecord, _ := records[len(records)-1].(map[string]interface{})
 	var maxTimestampRecords []string
 
@@ -292,7 +299,7 @@ func (snow *SnowDataReader) writeCheckpoint(records []interface{}, refreshed boo
 		return err
 	}
 
-	err = snow.checkpoint.WriteCheckpoint(snow.AdditionalConfig, data)
+	err = snow.checkpoint.WriteCheckpoint(snow.config, data)
 	if err != nil {
 		return err
 	}
@@ -309,7 +316,7 @@ func (snow *SnowDataReader) getCheckpoint() *collectionState {
 	}
 
 	glog.Infof("State is not in cache, reload from checkpoint")
-	ck, err := snow.checkpoint.GetCheckpoint(snow.AdditionalConfig)
+	ck, err := snow.checkpoint.GetCheckpoint(snow.config)
 	if err != nil || ck == nil {
 		return nil
 	}
@@ -331,7 +338,7 @@ func (snow *SnowDataReader) getNextRecordTime() string {
 	state := snow.getCheckpoint()
 	if state == nil {
 		glog.Infof("Checkpoint not found, use intial configuration")
-		snow.state.NextRecordTime = snow.AdditionalConfig[nextRecordTimeKey]
+		snow.state.NextRecordTime = snow.config[nextRecordTimeKey]
 	}
 	return strings.Replace(snow.state.NextRecordTime, " ", "+", 1)
 }

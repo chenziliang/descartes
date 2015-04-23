@@ -95,9 +95,9 @@ func doTest() {
 }
 
 func TestKafkaDataReader(t *testing.T) {
-	brokerConfigs := []*base.BaseConfig{
-		&base.BaseConfig{
-			ServerURL: "172.16.107.153:9092",
+	brokerConfigs := []base.BaseConfig{
+		base.BaseConfig{
+			base.ServerURL: "172.16.107.153:9092",
 		},
 	}
 	client := base.NewKafkaClient(brokerConfigs, "consumerClient")

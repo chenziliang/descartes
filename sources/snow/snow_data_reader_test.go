@@ -19,7 +19,10 @@ func TestSnowDataReader(t *testing.T) {
 	ckTopic := "SnowCheckpointTopic_0"
 	var partition int32 = 0
 
-	additionalConfig := map[string]string{
+	sourceConfig := base.BaseConfig{
+		base.ServerURL:           "https://ven01034.service-now.com",
+		base.Username:            "admin",
+		base.Password:            "splunk123",
 		endpointKey:              "incident",
 		timestampFieldKey:        "sys_updated_on",
 		nextRecordTimeKey:        "2014-03-23+08:19:04",
@@ -31,16 +34,9 @@ func TestSnowDataReader(t *testing.T) {
 		base.CheckpointPartition: fmt.Sprintf("%d", partition),
 	}
 
-	sourceConfig := &base.BaseConfig{
-		ServerURL:        "https://ven01034.service-now.com",
-		Username:         "admin",
-		Password:         "splunk123",
-		AdditionalConfig: additionalConfig,
-	}
-
-	brokerConfigs := []*base.BaseConfig{
-		&base.BaseConfig{
-			ServerURL: "172.16.107.153:9092",
+	brokerConfigs := []base.BaseConfig{
+		base.BaseConfig{
+			base.ServerURL: "172.16.107.153:9092",
 		},
 	}
 

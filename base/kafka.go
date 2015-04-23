@@ -7,7 +7,7 @@ import (
 )
 
 type KafkaClient struct {
-	brokerConfigs   []*BaseConfig
+	brokerConfigs   []BaseConfig
 	client          sarama.Client
 	topicPartitions map[string][]int32
 }
@@ -16,10 +16,10 @@ const (
 	maxRetry = 10
 )
 
-func NewKafkaClient(brokerConfigs []*BaseConfig, clientName string) *KafkaClient {
+func NewKafkaClient(brokerConfigs []BaseConfig, clientName string) *KafkaClient {
 	var brokerIps []string
 	for _, brokerConfig := range brokerConfigs {
-		brokerIps = append(brokerIps, brokerConfig.ServerURL)
+		brokerIps = append(brokerIps, brokerConfig[ServerURL])
 	}
 
 	config := sarama.NewConfig()
@@ -40,7 +40,7 @@ func NewKafkaClient(brokerConfigs []*BaseConfig, clientName string) *KafkaClient
 func (client *KafkaClient) BrokerIPs() []string {
 	var brokerIps []string
 	for _, brokerConfig := range client.brokerConfigs {
-		brokerIps = append(brokerIps, brokerConfig.ServerURL)
+		brokerIps = append(brokerIps, brokerConfig[ServerURL])
 	}
 	return brokerIps
 }

@@ -1,14 +1,6 @@
 package base
 
-type BaseConfig struct {
-	ServerURL        string
-	Username         string
-	Password         string
-	ProxyURL         string
-	ProxyUsername    string
-	ProxyPassword    string
-	AdditionalConfig map[string]string
-}
+type BaseConfig map[string]string
 
 type Data struct {
 	MetaInfo map[string]string

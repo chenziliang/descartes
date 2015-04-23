@@ -49,7 +49,7 @@ func testLLRB() {
 		now = time.Now().UnixNano()
 		item := tree.Get(jobs[index+i])
 		fmt.Printf("Look for rand: %d nano sec\n", time.Now().UnixNano()-now)
-		if item.(*Job).Id() != jobs[index+i].Id() {
+		if item.(Job).Id() != jobs[index+i].Id() {
 			panic("Something wrong has happended")
 		}
 	}

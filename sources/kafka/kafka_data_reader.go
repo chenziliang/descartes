@@ -26,20 +26,22 @@ type KafkaDataReader struct {
 	master            sarama.Consumer
 	partitionConsumer sarama.PartitionConsumer
 	state             collectionState
-	config            map[string]string
+	config            base.BaseConfig
 	collecting        int32
+	startIndexing     int32
 }
 
 const (
 	stopped        = 0
 	initialStarted = 1
 	started        = 2
+	startIndex     = 3
 	maxRetry       = 16
 )
 
 // NewKafaDataReader
 // FIXME support more config options
-func NewKafkaDataReader(client *base.KafkaClient, config map[string]string,
+func NewKafkaDataReader(client *base.KafkaClient, config base.BaseConfig,
 	writer base.DataWriter, checkpoint base.Checkpointer) *KafkaDataReader {
 	topic, partition := config[base.Topic], config[base.Partition]
 	master, err := sarama.NewConsumerFromClient(client.Client())
@@ -76,7 +78,7 @@ func NewKafkaDataReader(client *base.KafkaClient, config map[string]string,
 		}
 	}
 
-	// fmt.Println(fmt.Sprintf("Get offset=%d for consumer group=%s, topic=%s, partition=%d,", state.Offset, readerConfig.ConsumerGroup, topic, partition))
+	glog.Infof("Get offset=%d for consumer group=%s, topic=%s, partition=%d,", state.Offset, config["ConsumerGroup"], topic, partition)
 
 	consumer, err := master.ConsumePartition(topic, int32(pid), state.Offset)
 	if err != nil {
@@ -118,11 +120,16 @@ func (reader *KafkaDataReader) Stop() {
 	glog.Infof("KafkDataReader stopped...")
 }
 
-func (reader *KafkaDataReader) CollectData() ([]byte, error) {
+func (reader *KafkaDataReader) ReadData() ([]byte, error) {
 	return nil, nil
 }
 
 func (reader *KafkaDataReader) IndexData() error {
+	if !atomic.CompareAndSwapInt32(&reader.startIndexing, 0, 1) {
+		glog.Infof("KafkDataReader indexing already started.")
+		return nil
+	}
+
 	var (
 		n                               = 128
 		lastMsg *sarama.ConsumerMessage = nil

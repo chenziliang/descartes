@@ -7,15 +7,13 @@ import (
 )
 
 func TestKafkaDataWriter(t *testing.T) {
-	sinkConfig := []*base.BaseConfig{
-		&base.BaseConfig{
-			ServerURL: "172.16.107.153:9092",
-			AdditionalConfig: map[string]string{
-				"Topic": "DescartesTest",
-				"Key":   "MyKey",
-				"host":  "my.host.com",
-				"user":  "Ken Chen",
-			},
+	sinkConfig := []base.BaseConfig{
+		base.BaseConfig{
+			base.ServerURL: "172.16.107.153:9092",
+			"Topic":        "DescartesTest",
+			"Key":          "MyKey",
+			"host":         "my.host.com",
+			"user":         "Ken Chen",
 		},
 	}
 	writer := NewKafkaDataWriter(sinkConfig)

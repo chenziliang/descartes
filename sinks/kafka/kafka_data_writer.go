@@ -10,7 +10,7 @@ import (
 )
 
 type KafkaDataWriter struct {
-	brokers       []*base.BaseConfig
+	brokers       []base.BaseConfig
 	asyncProducer sarama.AsyncProducer
 	syncProducer  sarama.SyncProducer
 	state         int32
@@ -23,18 +23,18 @@ const (
 )
 
 // NewKafaDataWriter
-// @BaseConfig.AdditionalConfig: contains
+// @BaseConfig: contains
 // base.Topic, base.Key which indicates where to write the data to Kafka
 // base.RequireAcks, base.FlushMemory, base.SyncWrite Kafka producer options
 
-func NewKafkaDataWriter(brokers []*base.BaseConfig) base.DataWriter {
+func NewKafkaDataWriter(brokers []base.BaseConfig) base.DataWriter {
 	if len(brokers) == 0 {
 		glog.Errorf("Empty configs passed in")
 		return nil
 	}
 
 	for _, k := range []string{base.Topic, base.Key} {
-		if _, ok := brokers[0].AdditionalConfig[k]; !ok {
+		if _, ok := brokers[0][k]; !ok {
 			glog.Errorf("%s config is required", k)
 			return nil
 		}
@@ -45,7 +45,7 @@ func NewKafkaDataWriter(brokers []*base.BaseConfig) base.DataWriter {
 	config.Producer.Flush.Frequency = 500 * time.Millisecond
 	var brokerList []string
 	for i := 0; i < len(brokers); i++ {
-		brokerList = append(brokerList, brokers[i].ServerURL)
+		brokerList = append(brokerList, brokers[i][base.ServerURL])
 	}
 
 	asyncProducer, err := sarama.NewAsyncProducer(brokerList, config)
@@ -95,7 +95,7 @@ func (writer *KafkaDataWriter) Stop() {
 }
 
 func (writer *KafkaDataWriter) WriteData(data *base.Data) error {
-	if writer.brokers[0].AdditionalConfig[base.SyncWrite] == "1" {
+	if writer.brokers[0][base.SyncWrite] == "1" {
 		return writer.WriteDataSync(data)
 	} else {
 		return writer.WriteDataAsync(data)
@@ -110,8 +110,8 @@ func (writer *KafkaDataWriter) prepareData(data *base.Data) (*sarama.ProducerMes
 	}
 
 	msg := &sarama.ProducerMessage{
-		Topic: writer.brokers[0].AdditionalConfig[base.Topic],
-		Key:   sarama.StringEncoder(writer.brokers[0].AdditionalConfig[base.Key]),
+		Topic: writer.brokers[0][base.Topic],
+		Key:   sarama.StringEncoder(writer.brokers[0][base.Key]),
 		Value: sarama.StringEncoder(payload),
 	}
 	return msg, err

@@ -11,14 +11,14 @@ import (
 )
 
 type SplunkDataWriter struct {
-	splunkdConfigs []*base.BaseConfig
+	splunkdConfigs []base.BaseConfig
 	sessionKeys    map[string]string
 	rest           SplunkRest
 	dataQ          chan *base.Data
 	started        int32
 }
 
-func NewSplunkDataWriter(configs []*base.BaseConfig) base.DataWriter {
+func NewSplunkDataWriter(configs []base.BaseConfig) base.DataWriter {
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
@@ -59,7 +59,7 @@ func (writer *SplunkDataWriter) Stop() {
 }
 
 func (writer *SplunkDataWriter) WriteData(data *base.Data) error {
-	if writer.splunkdConfigs[0].AdditionalConfig[base.SyncWrite] == "1" {
+	if writer.splunkdConfigs[0][base.SyncWrite] == "1" {
 		return writer.WriteDataSync(data)
 	} else {
 		return writer.WriteDataAsync(data)
@@ -78,8 +78,8 @@ func (writer *SplunkDataWriter) WriteDataSync(data *base.Data) error {
 func (writer *SplunkDataWriter) doWriteData(data *base.Data) error {
 	metaProps := url.Values{}
 	metaProps.Add(base.Host, data.MetaInfo[base.ServerURL])
-	metaProps.Add(base.Index, writer.splunkdConfigs[0].AdditionalConfig[base.Index])
-	metaProps.Add(base.Source, writer.splunkdConfigs[0].AdditionalConfig[base.Source])
+	metaProps.Add(base.Index, writer.splunkdConfigs[0][base.Index])
+	metaProps.Add(base.Source, writer.splunkdConfigs[0][base.Source])
 	metaProps.Add(base.Sourcetype, "snow:"+data.MetaInfo["Endpoint"])
 
 	// FIXME perf issue for bytes concatenation
@@ -104,12 +104,12 @@ func (writer *SplunkDataWriter) doWriteData(data *base.Data) error {
 
 func (writer *SplunkDataWriter) login() error {
 	for _, cred := range writer.splunkdConfigs {
-		sessionKey, err := writer.rest.Login(cred.ServerURL, cred.Username, cred.Password)
+		sessionKey, err := writer.rest.Login(cred[base.ServerURL], cred[base.Username], cred[base.Password])
 		if err != nil {
 			// FIXME err handling
 			continue
 		}
-		writer.sessionKeys[cred.ServerURL] = sessionKey
+		writer.sessionKeys[cred[base.ServerURL]] = sessionKey
 	}
 	return nil
 }

@@ -6,8 +6,8 @@ import (
 )
 
 func TestKafkaClient(t *testing.T) {
-	brokerConfigs := []*BaseConfig{
-		&BaseConfig{
+	brokerConfigs := []BaseConfig{
+		BaseConfig{
 			ServerURL: "172.16.107.153:9092",
 		},
 	}

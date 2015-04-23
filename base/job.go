@@ -7,19 +7,35 @@ import (
 	"sync/atomic"
 )
 
+type JobFunc func() error
+
+type Job interface {
+	ResetFunc(f JobFunc)
+	Less(other llrb.Item) bool
+	String() string
+	Id() string
+	Interval() int64
+	ExpirationTime() int64
+	UpdateExpirationTime() int64
+	SetIntialExpirationTime(when int64)
+	Prop(key string) string
+	SetProp(key, value string)
+	Start()
+	Stop()
+	Callback()
+}
+
 var jobId int64 = 0
 
-type Func func() error
-
-type Job struct {
-	f        Func
+type BaseJob struct {
+	f        JobFunc
 	when     int64 // absolut nano seconds since epoch
 	interval int64 // nano seconds
 	id       string
 	props    map[string]string
 }
 
-type JobList []*Job
+type JobList []Job
 
 // JobList implements sort.Interface
 func (jobs JobList) Len() int {
@@ -34,8 +50,8 @@ func (jobs JobList) Less(i, j int) bool {
 	return jobs[i].Less(jobs[j])
 }
 
-func NewJob(f Func, when int64, interval int64, props map[string]string) *Job {
-	return &Job{
+func NewJob(f JobFunc, when int64, interval int64, props map[string]string) *BaseJob {
+	return &BaseJob{
 		f:        f,
 		id:       strconv.FormatInt(atomic.AddInt64(&jobId, 1), 10),
 		when:     when,
@@ -44,49 +60,63 @@ func NewJob(f Func, when int64, interval int64, props map[string]string) *Job {
 	}
 }
 
-func (job *Job) Less(other llrb.Item) bool {
-	rjob := other.(*Job)
-	if job.when < rjob.when {
+func (job *BaseJob) ResetFunc(f JobFunc) {
+	job.f = f
+}
+
+func (job *BaseJob) Less(other llrb.Item) bool {
+	rjob := other.(Job)
+	if job.ExpirationTime() < rjob.ExpirationTime() {
 		return true
 	}
 
-	if job.when == rjob.when {
-		return job.id < rjob.id
+	if job.ExpirationTime() == rjob.ExpirationTime() {
+		return job.Id() < rjob.Id()
 	}
 	return false
 }
 
-func (job *Job) String() string {
+func (job *BaseJob) String() string {
 	return fmt.Sprintf("%d(%s)", job.when, job.id)
 }
 
-func (job *Job) Id() string {
+func (job *BaseJob) Id() string {
 	return job.id
 }
 
-func (job *Job) Interval() int64 {
+func (job *BaseJob) Interval() int64 {
 	return job.interval
 }
 
-func (job *Job) ExpirationTime() int64 {
+func (job *BaseJob) ExpirationTime() int64 {
 	return job.when
 }
 
-func (job *Job) UpdateExpirationTime() int64 {
+func (job *BaseJob) UpdateExpirationTime() int64 {
 	job.when += job.interval
 	return job.when
 }
 
-func (job *Job) SetIntialExpirationTime(when int64) {
+func (job *BaseJob) SetIntialExpirationTime(when int64) {
 	if job.when == 0 {
 		job.when = when
 	}
 }
 
-func (job *Job) Prop(key string) string {
+func (job *BaseJob) Prop(key string) string {
 	return job.props[key]
 }
 
-func (job *Job) SetProp(key, value string) {
+func (job *BaseJob) SetProp(key, value string) {
 	job.props[key] = value
+}
+
+func (job *BaseJob) Start() {
+}
+
+func (job *BaseJob) Stop() {
+}
+
+func (job *BaseJob) Callback() {
+	job.f()
 }
