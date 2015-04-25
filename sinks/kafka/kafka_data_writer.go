@@ -95,7 +95,7 @@ func (writer *KafkaDataWriter) Stop() {
 }
 
 func (writer *KafkaDataWriter) WriteData(data *base.Data) error {
-	if writer.brokers[0][base.SyncWrite] == "1" {
+	if writer.brokers[0][base.SyncWrite] == "0" {
 		return writer.WriteDataSync(data)
 	} else {
 		return writer.WriteDataAsync(data)
@@ -122,7 +122,10 @@ func (writer *KafkaDataWriter) WriteDataAsync(data *base.Data) error {
 	if err != nil {
 		return err
 	}
-	writer.asyncProducer.Input() <- msg
+
+	if atomic.LoadInt32(&writer.state) != stopped {
+		writer.asyncProducer.Input() <- msg
+	}
 	return nil
 }
 

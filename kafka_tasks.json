@@ -1,12 +1,44 @@
 {
-    "kafka": [
+    "snow": [
         {
             "Brokers": "172.16.107.153:9092",
             "ServerURL": "https://localhost:8089",
             "Username": "admin",
             "Password": "admin",
             "Index": "main",
-            "Source": "descartes"
+            "Source": "descartes",
+            "SourceServerURL": "https://ven01034.service-now.com",
+            "SourceUsername": "admin"
+        },
+        {
+            "Brokers": "172.16.107.153:9092",
+            "ServerURL": "https://localhost:8089",
+            "Username": "admin",
+            "Password": "admin",
+            "Index": "main",
+            "Source": "descartes",
+            "SourceServerURL": "https://dev167.service-now.com",
+            "SourceUsername": "admin"
+        },
+        {
+            "Brokers": "172.16.107.153:9092",
+            "ServerURL": "https://localhost:8089",
+            "Username": "admin",
+            "Password": "admin",
+            "Index": "main",
+            "Source": "descartes",
+            "SourceServerURL": "https://dev166.service-now.com",
+            "SourceUsername": "admin"
+        },
+        {
+            "Brokers": "172.16.107.153:9092",
+            "ServerURL": "https://localhost:8089",
+            "Username": "admin",
+            "Password": "admin",
+            "Index": "main",
+            "Source": "descartes",
+            "SourceServerURL": "https://dev149.service-now.com",
+            "SourceUsername": "admin"
         }
     ]
 }

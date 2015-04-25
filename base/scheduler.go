@@ -113,10 +113,10 @@ func (sched *Scheduler) wakeUp() {
 func (sched *Scheduler) doJobs() {
 L:
 	for {
-		sleep_time, jobs := sched.getReadyJobs()
+		sleepTime, jobs := sched.getReadyJobs()
 		sched.executeJobs(jobs)
 		select {
-		case <-time.After(sleep_time):
+		case <-time.After(sleepTime):
 			continue
 		case v := <-sched.wakeupChan:
 			if v == teardownNum {
@@ -125,7 +125,6 @@ L:
 		}
 	}
 	sched.doneChan <- true
-	glog.Infof("Scheduler is going to exit.")
 }
 
 func (sched *Scheduler) getReadyJobs() (sleep_time time.Duration, jobs []Job) {

@@ -82,7 +82,6 @@ func (snow *SnowDataReader) Start() {
 }
 
 func (snow *SnowDataReader) Stop() {
-	glog.Infof("SnowDataReader is going to stop")
 	if !atomic.CompareAndSwapInt32(&snow.started, 1, 0) {
 		glog.Infof("SnowDataReader already stopped")
 		return
@@ -217,11 +216,11 @@ func (snow *SnowDataReader) doRemoveRecords(records []interface{}, lastTimeRecor
 		}
 	}
 
-	if len(recordsToBeRemoved) > 0 {
-		glog.Infof("Last time records: %+v with timestamp=%s. "+
-			"Remove collected records: %s with the same timestamp",
-			lastTimeRecords, lastRecordTime, recordsToBeRemoved)
-	}
+	//if len(recordsToBeRemoved) > 0 {
+    //		glog.Infof("Last time records: %+v with timestamp=%s. "+
+	//			"Remove collected records: %s with the same timestamp",
+	//			lastTimeRecords, lastRecordTime, recordsToBeRemoved)
+	//}
 	return recordsToBeIndexed
 }
 

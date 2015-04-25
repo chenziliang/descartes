@@ -68,7 +68,12 @@ func NewKafkaDataReader(client *base.KafkaClient, config base.BaseConfig,
 		return nil
 	}
 
-	pid, _ := strconv.Atoi(config[base.Partition])
+	pid, err := strconv.Atoi(config[base.Partition])
+	if err != nil {
+		glog.Errorf("Partition is expected as a number, got %s", config[base.Partition])
+		return nil
+	}
+
 	consumer, err := master.ConsumePartition(topic, int32(pid), state.Offset)
 	if err != nil {
 		glog.Errorf("Failed to create Kafka partition consumer for topic=%s, partition=%s, error=%s", topic, partition, err)
@@ -102,6 +107,7 @@ func (reader *KafkaDataReader) Stop() {
 		glog.Infof("KafkaDataReader already stopped")
 		return
 	}
+
 	reader.master.Close()
 	reader.partitionConsumer.AsyncClose()
 	reader.writer.Stop()
@@ -148,6 +154,7 @@ func (reader *KafkaDataReader) IndexData() error {
 			if !ok {
 				break
 			}
+
 			var data base.Data
 			err := json.Unmarshal(msg.Value, &data)
 			if err != nil {
@@ -165,9 +172,6 @@ func (reader *KafkaDataReader) IndexData() error {
 			if lastMsg != nil && len(batchs) > 0 {
 				batchs = f(lastMsg, batchs)
 			}
-
-		default:
-			time.Sleep(sleepTime)
 		}
 	}
 	return nil

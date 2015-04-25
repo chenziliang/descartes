@@ -20,6 +20,10 @@ const (
 func NewKafkaClient(brokerConfigs []BaseConfig, clientName string) *KafkaClient {
 	var brokerIps []string
 	for _, brokerConfig := range brokerConfigs {
+		if brokerConfig[ServerURL] == "" {
+			glog.Errorf("broker IP/port is required to create KafkaClient")
+			return nil
+		}
 		brokerIps = append(brokerIps, brokerConfig[ServerURL])
 	}
 
@@ -194,6 +198,10 @@ func (client *KafkaClient) Leader(topic string, partition int32) (*sarama.Broker
 		}
 	}
 	return leader, err
+}
+
+func (client *KafkaClient) Close() {
+	client.client.Close()
 }
 
 func (client *KafkaClient) Client() sarama.Client {

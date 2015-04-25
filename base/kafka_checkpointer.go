@@ -20,6 +20,7 @@ type KafkaCheckpointer struct {
 
 func NewKafkaCheckpointer(client *KafkaClient) Checkpointer {
 	syncConfig := sarama.NewConfig()
+	syncConfig.Producer.Partitioner = sarama.NewManualPartitioner
 	syncProducer, err := sarama.NewSyncProducer(client.BrokerIPs(), syncConfig)
 	if err != nil {
 		glog.Errorf("Failed to create Kafka sync producer for checkpoint, error=%s", err)
@@ -58,11 +59,14 @@ func (ck *KafkaCheckpointer) GetCheckpoint(keyInfo map[string]string) ([]byte, e
 }
 
 func (ck *KafkaCheckpointer) WriteCheckpoint(keyInfo map[string]string, value []byte) error {
+	partition, _ := strconv.Atoi(keyInfo[CheckpointPartition])
 	msg := &sarama.ProducerMessage{
 		Topic: keyInfo[CheckpointTopic],
 		Key:   sarama.StringEncoder(keyInfo[CheckpointKey]),
 		Value: sarama.StringEncoder(value),
+		Partition: int32(partition),
 	}
+
 	_, _, err := ck.syncProducer.SendMessage(msg)
 	// FIXME retry other brokers when failed ?
 	if err != nil {

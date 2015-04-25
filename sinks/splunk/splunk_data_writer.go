@@ -59,7 +59,7 @@ func (writer *SplunkDataWriter) Stop() {
 }
 
 func (writer *SplunkDataWriter) WriteData(data *base.Data) error {
-	if writer.splunkdConfigs[0][base.SyncWrite] == "1" {
+	if writer.splunkdConfigs[0][base.SyncWrite] == "0" {
 		return writer.WriteDataSync(data)
 	} else {
 		return writer.WriteDataAsync(data)
@@ -77,10 +77,10 @@ func (writer *SplunkDataWriter) WriteDataSync(data *base.Data) error {
 
 func (writer *SplunkDataWriter) doWriteData(data *base.Data) error {
 	metaProps := url.Values{}
-	metaProps.Add(base.Host, data.MetaInfo[base.ServerURL])
-	metaProps.Add(base.Index, writer.splunkdConfigs[0][base.Index])
-	metaProps.Add(base.Source, writer.splunkdConfigs[0][base.Source])
-	metaProps.Add(base.Sourcetype, "snow:"+data.MetaInfo["Endpoint"])
+	metaProps.Add("host", data.MetaInfo[base.ServerURL])
+	metaProps.Add("index", writer.splunkdConfigs[0][base.Index])
+	metaProps.Add("source", writer.splunkdConfigs[0][base.Source])
+	metaProps.Add("sourcetype", "snow:"+data.MetaInfo["Endpoint"])
 
 	// FIXME perf issue for bytes concatenation
 	allData := make([]byte, 0, 4096)
