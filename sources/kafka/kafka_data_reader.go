@@ -76,7 +76,8 @@ func NewKafkaDataReader(client *base.KafkaClient, config base.BaseConfig,
 
 	consumer, err := master.ConsumePartition(topic, int32(pid), state.Offset)
 	if err != nil {
-		glog.Errorf("Failed to create Kafka partition consumer for topic=%s, partition=%s, error=%s", topic, partition, err)
+		glog.Errorf("Failed to create Kafka partition consumer for topic=%s, partition=%s, error=%s",
+			topic, partition, err)
 		return nil
 	}
 
@@ -126,11 +127,10 @@ func (reader *KafkaDataReader) IndexData() error {
 	}
 
 	var (
-		n                                 = 16
-		lastMsg   *sarama.ConsumerMessage = nil
-		batchs                            = make([]*base.Data, 0, n)
-		sleepTime                         = 100 * time.Millisecond
-		errMsg                            = "Failed to unmarshal msg, expect marshalled in JSON format of base.Data"
+		n                               = 16
+		lastMsg *sarama.ConsumerMessage = nil
+		batchs                          = make([]*base.Data, 0, n)
+		errMsg                          = "Failed to unmarshal msg, expect marshalled in JSON format of base.Data"
 	)
 
 	f := func(msg *sarama.ConsumerMessage, msgs []*base.Data) []*base.Data {

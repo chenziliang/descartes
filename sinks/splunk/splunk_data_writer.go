@@ -2,6 +2,8 @@ package splunk
 
 import (
 	"crypto/tls"
+	"errors"
+	"fmt"
 	"github.com/chenziliang/descartes/base"
 	"github.com/golang/glog"
 	"net/http"
@@ -12,9 +14,10 @@ import (
 
 type SplunkDataWriter struct {
 	splunkdConfigs []base.BaseConfig
-	sessionKeys    map[string]string
+	sessionKeys    [][]string
 	rest           SplunkRest
 	dataQ          chan *base.Data
+	nextSlot       int
 	started        int32
 }
 
@@ -24,12 +27,18 @@ func NewSplunkDataWriter(configs []base.BaseConfig) base.DataWriter {
 	}
 	client := &http.Client{Transport: tr, Timeout: 120 * time.Second}
 
-	return &SplunkDataWriter{
+	writer := &SplunkDataWriter{
 		splunkdConfigs: configs,
-		sessionKeys:    make(map[string]string, len(configs)),
+		sessionKeys:    make([][]string, 0, len(configs)),
 		rest:           SplunkRest{client},
 		dataQ:          make(chan *base.Data, 1000),
 	}
+
+	err := writer.login()
+	if err != nil {
+		return nil
+	}
+	return writer
 }
 
 func (writer *SplunkDataWriter) Start() {
@@ -39,8 +48,6 @@ func (writer *SplunkDataWriter) Start() {
 	}
 
 	go func() {
-		writer.login()
-
 		for {
 			data := <-writer.dataQ
 			if data != nil {
@@ -90,26 +97,37 @@ func (writer *SplunkDataWriter) doWriteData(data *base.Data) error {
 		allData = append(allData, '\n')
 	}
 
-	for serverURL, sessionKey := range writer.sessionKeys {
-		err := writer.rest.IndexData(serverURL, sessionKey, &metaProps, allData)
+	for range writer.sessionKeys {
+		writer.nextSlot = (writer.nextSlot + 1) % len(writer.sessionKeys)
+		urlSession := writer.sessionKeys[writer.nextSlot]
+		err := writer.rest.IndexData(urlSession[0], urlSession[1], &metaProps, allData)
 		if err != nil {
-			glog.Errorf("Failed to index data to %s, error=%s", serverURL, err)
+			glog.Errorf("Failed to index data to %s, error=%s", urlSession[0], err)
 			continue
 		}
 		break
 	}
 
+	// FIXME relogin when fail
+
 	return nil
 }
 
 func (writer *SplunkDataWriter) login() error {
+	var failed []string
+	writer.sessionKeys = writer.sessionKeys[:0]
 	for _, cred := range writer.splunkdConfigs {
 		sessionKey, err := writer.rest.Login(cred[base.ServerURL], cred[base.Username], cred[base.Password])
 		if err != nil {
-			// FIXME err handling
+			failed = append(failed, cred[base.ServerURL])
 			continue
 		}
-		writer.sessionKeys[cred[base.ServerURL]] = sessionKey
+		writer.sessionKeys = append(writer.sessionKeys, []string{cred[base.ServerURL], sessionKey})
 	}
+
+	if len(writer.sessionKeys) == 0 {
+		return errors.New(fmt.Sprintf("Failed to login all of Splunkds=%s", failed))
+	}
+
 	return nil
 }

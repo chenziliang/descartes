@@ -61,9 +61,9 @@ func (ck *KafkaCheckpointer) GetCheckpoint(keyInfo map[string]string) ([]byte, e
 func (ck *KafkaCheckpointer) WriteCheckpoint(keyInfo map[string]string, value []byte) error {
 	partition, _ := strconv.Atoi(keyInfo[CheckpointPartition])
 	msg := &sarama.ProducerMessage{
-		Topic: keyInfo[CheckpointTopic],
-		Key:   sarama.StringEncoder(keyInfo[CheckpointKey]),
-		Value: sarama.StringEncoder(value),
+		Topic:     keyInfo[CheckpointTopic],
+		Key:       sarama.StringEncoder(keyInfo[CheckpointKey]),
+		Value:     sarama.StringEncoder(value),
 		Partition: int32(partition),
 	}
 

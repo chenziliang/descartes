@@ -40,12 +40,6 @@ func main() {
 	// glog.Errorf("snowTasks=%s", snowTasks["snow"][0])
 	// glog.Errorf("kafkaTasks=%s", kafkaTasks)
 
-	// Kafka job
-	kafkaDataGathering := NewDataGatheringService()
-	topicMonitor := NewKafkaMetaDataMonitor(kafkaTasks, kafkaDataGathering)
-	kafkaDataGathering.Start()
-	topicMonitor.Start()
-
 	// Snow job
 	snowDataGathering := NewDataGatheringService()
 	for k, tasks := range snowTasks {
@@ -55,7 +49,13 @@ func main() {
 	}
 	snowDataGathering.Start()
 
-	time.Sleep(1 * time.Minute)
+	// Kafka job
+	kafkaDataGathering := NewDataGatheringService()
+	topicMonitor := NewKafkaMetaDataMonitor(kafkaTasks, kafkaDataGathering)
+	kafkaDataGathering.Start()
+	topicMonitor.Start()
+
+	time.Sleep(2 * time.Minute)
 
 	snowDataGathering.Stop()
 	kafkaDataGathering.Stop()

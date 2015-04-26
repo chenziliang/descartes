@@ -168,7 +168,17 @@ func (factory *JobFactory) newKafkaJob(config base.BaseConfig) base.Job {
 
 	client, _ := factory.getKafkaClient(config, config[base.Topic], config[base.Topic])
 
-	writer := splunk.NewSplunkDataWriter([]base.BaseConfig{config})
+	splunkConfigs := []base.BaseConfig{}
+	for _, splunkdURI := range strings.Split(config[base.ServerURL], ";") {
+		splunkConfig := make(base.BaseConfig, len(config))
+		for k, v := range config {
+			splunkConfig[k] = v
+		}
+		splunkConfig[base.ServerURL] = splunkdURI
+		splunkConfigs = append(splunkConfigs, splunkConfig)
+	}
+
+	writer := splunk.NewSplunkDataWriter(splunkConfigs)
 	if writer == nil {
 		return nil
 	}
@@ -325,7 +335,6 @@ func NewKafkaMetaDataMonitor(topicConfigs ConfigContainer, dgs *DataGatheringSer
 	}
 
 	brokerConfigs := []base.BaseConfig{}
-
 	for _, broker := range strings.Split(brokers, ";") {
 		config := base.BaseConfig{
 			base.ServerURL: broker,

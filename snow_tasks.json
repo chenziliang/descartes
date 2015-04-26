@@ -12,7 +12,7 @@
             "Password":"splunk123",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -26,7 +26,7 @@
             "Password":"splunk123",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -40,7 +40,7 @@
             "Password":"splunk123",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -54,7 +54,7 @@
             "Password":"splunk123",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -68,7 +68,7 @@
             "Password":"splunk123",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -82,7 +82,7 @@
             "Password":"splunk123",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -96,7 +96,7 @@
             "Password":"splunk123",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -110,7 +110,7 @@
             "Password":"splunk123",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -124,7 +124,7 @@
             "Password":"splunk123",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -138,7 +138,7 @@
             "Password":"splunk123",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -152,7 +152,7 @@
             "Password":"splunk123",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -166,7 +166,7 @@
             "Password":"splunk123",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -180,7 +180,7 @@
             "Password":"splunk123",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -194,7 +194,7 @@
             "Password":"splunk123",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -208,7 +208,7 @@
             "Password":"splunk123",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -222,7 +222,7 @@
             "Password":"splunk123",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -236,7 +236,7 @@
             "Password":"splunk123",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -250,7 +250,7 @@
             "Password":"splunk123",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -264,7 +264,7 @@
             "Password":"splunk123",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -278,7 +278,7 @@
             "Password":"splunk123",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -292,7 +292,7 @@
             "Password":"6DVbQtndiCUv",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -306,7 +306,7 @@
             "Password":"6DVbQtndiCUv",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -320,7 +320,7 @@
             "Password":"6DVbQtndiCUv",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -334,7 +334,7 @@
             "Password":"6DVbQtndiCUv",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -348,7 +348,7 @@
             "Password":"6DVbQtndiCUv",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -362,7 +362,7 @@
             "Password":"6DVbQtndiCUv",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -376,7 +376,7 @@
             "Password":"6DVbQtndiCUv",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -390,7 +390,7 @@
             "Password":"6DVbQtndiCUv",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -404,7 +404,7 @@
             "Password":"6DVbQtndiCUv",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -418,7 +418,7 @@
             "Password":"6DVbQtndiCUv",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -432,7 +432,7 @@
             "Password":"6DVbQtndiCUv",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -446,7 +446,7 @@
             "Password":"6DVbQtndiCUv",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -460,7 +460,7 @@
             "Password":"6DVbQtndiCUv",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -474,7 +474,7 @@
             "Password":"6DVbQtndiCUv",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -488,7 +488,7 @@
             "Password":"6DVbQtndiCUv",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -502,7 +502,7 @@
             "Password":"6DVbQtndiCUv",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -516,7 +516,7 @@
             "Password":"6DVbQtndiCUv",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -530,7 +530,7 @@
             "Password":"6DVbQtndiCUv",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -544,7 +544,7 @@
             "Password":"6DVbQtndiCUv",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -558,7 +558,7 @@
             "Password":"6DVbQtndiCUv",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -572,7 +572,7 @@
             "Password":"b9CQn4paMYWp",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -586,7 +586,7 @@
             "Password":"b9CQn4paMYWp",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -600,7 +600,7 @@
             "Password":"b9CQn4paMYWp",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -614,7 +614,7 @@
             "Password":"b9CQn4paMYWp",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -628,7 +628,7 @@
             "Password":"b9CQn4paMYWp",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -642,7 +642,7 @@
             "Password":"b9CQn4paMYWp",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -656,7 +656,7 @@
             "Password":"b9CQn4paMYWp",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -670,7 +670,7 @@
             "Password":"b9CQn4paMYWp",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -684,7 +684,7 @@
             "Password":"b9CQn4paMYWp",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -698,7 +698,7 @@
             "Password":"b9CQn4paMYWp",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -712,7 +712,7 @@
             "Password":"b9CQn4paMYWp",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -726,7 +726,7 @@
             "Password":"b9CQn4paMYWp",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -740,7 +740,7 @@
             "Password":"b9CQn4paMYWp",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -754,7 +754,7 @@
             "Password":"b9CQn4paMYWp",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -768,7 +768,7 @@
             "Password":"b9CQn4paMYWp",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -782,7 +782,7 @@
             "Password":"b9CQn4paMYWp",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -796,7 +796,7 @@
             "Password":"b9CQn4paMYWp",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -810,7 +810,7 @@
             "Password":"b9CQn4paMYWp",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -824,7 +824,7 @@
             "Password":"b9CQn4paMYWp",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -838,7 +838,7 @@
             "Password":"7RowgWED34FQ",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -852,7 +852,7 @@
             "Password":"7RowgWED34FQ",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -866,7 +866,7 @@
             "Password":"7RowgWED34FQ",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -880,7 +880,7 @@
             "Password":"7RowgWED34FQ",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -894,7 +894,7 @@
             "Password":"7RowgWED34FQ",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -908,7 +908,7 @@
             "Password":"7RowgWED34FQ",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -922,7 +922,7 @@
             "Password":"7RowgWED34FQ",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -936,7 +936,7 @@
             "Password":"7RowgWED34FQ",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -950,7 +950,7 @@
             "Password":"7RowgWED34FQ",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -964,7 +964,7 @@
             "Password":"7RowgWED34FQ",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -978,7 +978,7 @@
             "Password":"7RowgWED34FQ",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -992,7 +992,7 @@
             "Password":"7RowgWED34FQ",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -1006,7 +1006,7 @@
             "Password":"7RowgWED34FQ",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -1020,7 +1020,7 @@
             "Password":"7RowgWED34FQ",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -1034,7 +1034,7 @@
             "Password":"7RowgWED34FQ",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -1048,7 +1048,7 @@
             "Password":"7RowgWED34FQ",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -1062,7 +1062,7 @@
             "Password":"7RowgWED34FQ",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -1076,7 +1076,7 @@
             "Password":"7RowgWED34FQ",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         },
         {
             "Username":"admin",
@@ -1090,7 +1090,7 @@
             "Password":"7RowgWED34FQ",
             "NextRecordTime":"2014-01-01+00:00:00",
             "Interval": "60",
-            "Brokers": "172.16.107.153:9092"
+            "Brokers": "54.169.104.98:9092;52.74.147.99:9092;52.74.36.65:9092"
         }
     ]
 }

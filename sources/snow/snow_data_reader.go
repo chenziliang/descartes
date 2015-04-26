@@ -217,7 +217,7 @@ func (snow *SnowDataReader) doRemoveRecords(records []interface{}, lastTimeRecor
 	}
 
 	//if len(recordsToBeRemoved) > 0 {
-    //		glog.Infof("Last time records: %+v with timestamp=%s. "+
+	//		glog.Infof("Last time records: %+v with timestamp=%s. "+
 	//			"Remove collected records: %s with the same timestamp",
 	//			lastTimeRecords, lastRecordTime, recordsToBeRemoved)
 	//}
