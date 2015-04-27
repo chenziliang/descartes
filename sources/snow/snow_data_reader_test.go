@@ -34,13 +34,11 @@ func TestSnowDataReader(t *testing.T) {
 		base.CheckpointPartition: fmt.Sprintf("%d", partition),
 	}
 
-	brokerConfigs := []base.BaseConfig{
-		base.BaseConfig{
-			base.ServerURL: "172.16.107.153:9092",
-		},
+	brokerConfig := base.BaseConfig{
+		base.ServerURL: "172.16.107.153:9092",
 	}
 
-	client := base.NewKafkaClient(brokerConfigs, "consumerClient")
+	client := base.NewKafkaClient(brokerConfig, "consumerClient")
 
 	writer := &base.StdoutDataWriter{}
 	// ck := base.NewFileCheckpointer()

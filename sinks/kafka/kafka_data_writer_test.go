@@ -7,14 +7,12 @@ import (
 )
 
 func TestKafkaDataWriter(t *testing.T) {
-	sinkConfig := []base.BaseConfig{
-		base.BaseConfig{
-			base.ServerURL: "172.16.107.153:9092",
-			"Topic":        "DescartesTest",
-			"Key":          "MyKey",
-			"host":         "my.host.com",
-			"user":         "Ken Chen",
-		},
+	sinkConfig := base.BaseConfig{
+		base.ServerURL: "172.16.107.153:9092",
+		base.Topic:     "DescartesTest",
+		base.Key:       "MyKey",
+		base.Host:      "my.host.com",
+		base.Username:  "Ken Chen",
 	}
 	writer := NewKafkaDataWriter(sinkConfig)
 	writer.Start()
@@ -23,10 +21,10 @@ func TestKafkaDataWriter(t *testing.T) {
 
 	for i := 0; i < 3; i++ {
 		metaInfo := map[string]string{
-			"Topic": "DescartesTest",
-			"Key":   "MyKey",
-			"host":  "my.host.com",
-			"user":  "Ken Chen",
+			base.Topic:    "DescartesTest",
+			base.Key:      "MyKey",
+			base.Host:     "my.host.com",
+			base.Username: "Ken Chen",
 		}
 		rawData := [][]byte{[]byte("sync:a=b,c=d,1=2,3=4"), []byte("sync:1=2,3=4,a=b,c=d")}
 		data := base.NewData(metaInfo, rawData)

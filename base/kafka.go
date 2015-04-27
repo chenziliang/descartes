@@ -8,8 +8,8 @@ import (
 )
 
 type KafkaClient struct {
-	brokerConfigs []BaseConfig
-	client        sarama.Client
+	brokerConfig BaseConfig
+	client       sarama.Client
 }
 
 const (
@@ -17,37 +17,30 @@ const (
 	topicOrPartitionNotExist = -10
 )
 
-func NewKafkaClient(brokerConfigs []BaseConfig, clientName string) *KafkaClient {
-	var brokerIps []string
-	for _, brokerConfig := range brokerConfigs {
-		if brokerConfig[ServerURL] == "" {
-			glog.Errorf("broker IP/port is required to create KafkaClient")
-			return nil
-		}
-		brokerIps = append(brokerIps, brokerConfig[ServerURL])
+func NewKafkaClient(brokerConfig BaseConfig, clientName string) *KafkaClient {
+	if brokerConfig == nil || brokerConfig[ServerURL] == "" {
+		glog.Errorf("broker IP/port is required to create KafkaClient, got=%s", brokerConfig)
+		return nil
 	}
 
 	config := sarama.NewConfig()
 	config.ClientID = clientName
 
-	client, err := sarama.NewClient(brokerIps, config)
+	brokers := strings.Split(brokerConfig[ServerURL], ";")
+	client, err := sarama.NewClient(brokers, config)
 	if err != nil {
 		glog.Errorf("Failed to create KafkaClient name=%s, error=%s", clientName, err)
 		return nil
 	}
 
 	return &KafkaClient{
-		brokerConfigs: brokerConfigs,
-		client:        client,
+		brokerConfig: brokerConfig,
+		client:       client,
 	}
 }
 
 func (client *KafkaClient) BrokerIPs() []string {
-	var brokerIps []string
-	for _, brokerConfig := range client.brokerConfigs {
-		brokerIps = append(brokerIps, brokerConfig[ServerURL])
-	}
-	return brokerIps
+	return strings.Split(client.brokerConfig[ServerURL], ";")
 }
 
 func (client *KafkaClient) TopicPartitions(topic string) (map[string][]int32, error) {

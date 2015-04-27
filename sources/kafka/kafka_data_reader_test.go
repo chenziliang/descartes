@@ -95,12 +95,10 @@ func doTest() {
 }
 
 func TestKafkaDataReader(t *testing.T) {
-	brokerConfigs := []base.BaseConfig{
-		base.BaseConfig{
-			base.ServerURL: "172.16.107.153:9092",
-		},
+	brokerConfig := base.BaseConfig{
+		base.ServerURL: "172.16.107.153:9092",
 	}
-	client := base.NewKafkaClient(brokerConfigs, "consumerClient")
+	client := base.NewKafkaClient(brokerConfig, "consumerClient")
 	if client == nil {
 		t.Errorf("Failed to create KafkaClient")
 	}
@@ -129,7 +127,7 @@ func TestKafkaDataReader(t *testing.T) {
 
 	go dataReader.IndexData()
 
-	time.Sleep(40 * time.Second)
+	time.Sleep(20 * time.Second)
 
 	dataReader.Stop()
 	ck.Stop()

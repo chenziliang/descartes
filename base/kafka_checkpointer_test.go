@@ -5,12 +5,10 @@ import (
 )
 
 func TestKafkaCheckponter(t *testing.T) {
-	brokerConfigs := []BaseConfig{
-		BaseConfig{
-			ServerURL: "172.16.107.153:9092",
-		},
+	brokerConfig := BaseConfig{
+		ServerURL: "172.16.107.153:9092",
 	}
-	client := NewKafkaClient(brokerConfigs, "consumerClient")
+	client := NewKafkaClient(brokerConfig, "consumerClient")
 
 	keyInfo := map[string]string{
 		CheckpointTopic:     "CheckpointTestTopic2",

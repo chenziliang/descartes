@@ -7,7 +7,9 @@ import (
 	"sync/atomic"
 )
 
-type JobFunc func() error
+type JobParam interface {}
+
+type JobFunc func(params JobParam) error
 
 type Job interface {
 	ResetFunc(f JobFunc)
@@ -18,8 +20,6 @@ type Job interface {
 	ExpirationTime() int64
 	UpdateExpirationTime() int64
 	SetIntialExpirationTime(when int64)
-	Prop(key string) string
-	SetProp(key, value string)
 	Start()
 	Stop()
 	Callback()
@@ -32,7 +32,7 @@ type BaseJob struct {
 	when     int64 // absolut nano seconds since epoch
 	interval int64 // nano seconds
 	id       string
-	props    map[string]string
+	params   JobParam
 }
 
 type JobList []Job
@@ -50,13 +50,13 @@ func (jobs JobList) Less(i, j int) bool {
 	return jobs[i].Less(jobs[j])
 }
 
-func NewJob(f JobFunc, when int64, interval int64, props map[string]string) *BaseJob {
+func NewJob(f JobFunc, when int64, interval int64, params JobParam) *BaseJob {
 	return &BaseJob{
 		f:        f,
 		id:       strconv.FormatInt(atomic.AddInt64(&jobId, 1), 10),
 		when:     when,
 		interval: interval,
-		props:    props,
+		params:    params,
 	}
 }
 
@@ -103,14 +103,6 @@ func (job *BaseJob) SetIntialExpirationTime(when int64) {
 	}
 }
 
-func (job *BaseJob) Prop(key string) string {
-	return job.props[key]
-}
-
-func (job *BaseJob) SetProp(key, value string) {
-	job.props[key] = value
-}
-
 func (job *BaseJob) Start() {
 }
 
@@ -118,5 +110,5 @@ func (job *BaseJob) Stop() {
 }
 
 func (job *BaseJob) Callback() {
-	job.f()
+	job.f(job.params)
 }

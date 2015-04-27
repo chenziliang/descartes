@@ -7,12 +7,10 @@ import (
 
 func TestSplunkDataWriter(t *testing.T) {
 	serverURL := "https://localhost:8089"
-	sinkConfig := []base.BaseConfig{
-		base.BaseConfig{
-			base.ServerURL: serverURL,
-			base.Username:  "admin",
-			base.Password:  "admin",
-		},
+	sinkConfig := base.BaseConfig{
+		base.ServerURL: serverURL,
+		base.Username:  "admin",
+		base.Password:  "admin",
 	}
 
 	writer := NewSplunkDataWriter(sinkConfig)

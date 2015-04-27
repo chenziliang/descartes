@@ -8,30 +8,31 @@ import (
 	"github.com/golang/glog"
 	"net/http"
 	"net/url"
+	"strings"
 	"sync/atomic"
 	"time"
 )
 
 type SplunkDataWriter struct {
-	splunkdConfigs []base.BaseConfig
-	sessionKeys    [][]string
-	rest           SplunkRest
-	dataQ          chan *base.Data
-	nextSlot       int
-	started        int32
+	splunkdConfig base.BaseConfig
+	sessionKeys   [][]string
+	rest          SplunkRest
+	dataQ         chan *base.Data
+	nextSlot      int
+	started       int32
 }
 
-func NewSplunkDataWriter(configs []base.BaseConfig) base.DataWriter {
+func NewSplunkDataWriter(config base.BaseConfig) base.DataWriter {
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	client := &http.Client{Transport: tr, Timeout: 120 * time.Second}
 
 	writer := &SplunkDataWriter{
-		splunkdConfigs: configs,
-		sessionKeys:    make([][]string, 0, len(configs)),
-		rest:           SplunkRest{client},
-		dataQ:          make(chan *base.Data, 1000),
+		splunkdConfig: config,
+		sessionKeys:   make([][]string, 0),
+		rest:          SplunkRest{client},
+		dataQ:         make(chan *base.Data, 1000),
 	}
 
 	err := writer.login()
@@ -66,7 +67,7 @@ func (writer *SplunkDataWriter) Stop() {
 }
 
 func (writer *SplunkDataWriter) WriteData(data *base.Data) error {
-	if writer.splunkdConfigs[0][base.SyncWrite] == "0" {
+	if writer.splunkdConfig[base.SyncWrite] == "0" {
 		return writer.WriteDataSync(data)
 	} else {
 		return writer.WriteDataAsync(data)
@@ -85,8 +86,8 @@ func (writer *SplunkDataWriter) WriteDataSync(data *base.Data) error {
 func (writer *SplunkDataWriter) doWriteData(data *base.Data) error {
 	metaProps := url.Values{}
 	metaProps.Add("host", data.MetaInfo[base.ServerURL])
-	metaProps.Add("index", writer.splunkdConfigs[0][base.Index])
-	metaProps.Add("source", writer.splunkdConfigs[0][base.Source])
+	metaProps.Add("index", writer.splunkdConfig[base.Index])
+	metaProps.Add("source", writer.splunkdConfig[base.Source])
 	metaProps.Add("sourcetype", "snow:"+data.MetaInfo["Endpoint"])
 
 	// FIXME perf issue for bytes concatenation
@@ -116,13 +117,14 @@ func (writer *SplunkDataWriter) doWriteData(data *base.Data) error {
 func (writer *SplunkDataWriter) login() error {
 	var failed []string
 	writer.sessionKeys = writer.sessionKeys[:0]
-	for _, cred := range writer.splunkdConfigs {
-		sessionKey, err := writer.rest.Login(cred[base.ServerURL], cred[base.Username], cred[base.Password])
+	config := writer.splunkdConfig
+	for _, url := range strings.Split(config[base.ServerURL], ";") {
+		sessionKey, err := writer.rest.Login(url, config[base.Username], config[base.Password])
 		if err != nil {
-			failed = append(failed, cred[base.ServerURL])
+			failed = append(failed, url)
 			continue
 		}
-		writer.sessionKeys = append(writer.sessionKeys, []string{cred[base.ServerURL], sessionKey})
+		writer.sessionKeys = append(writer.sessionKeys, []string{url, sessionKey})
 	}
 
 	if len(writer.sessionKeys) == 0 {

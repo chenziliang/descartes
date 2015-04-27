@@ -224,23 +224,28 @@ func (reader *KafkaDataReader) saveOffset(offset int64) {
 }
 
 func getCheckpoint(checkpoint base.Checkpointer, config base.BaseConfig) *collectionState {
-	data, err := checkpoint.GetCheckpoint(config)
-	if err != nil {
-		glog.Errorf("Failed to get last checkpoint, error=%s", err)
-		return nil
-	}
-
 	pid, err := strconv.Atoi(config[base.Partition])
 	if err != nil {
 		glog.Errorf("Failed to convert %s to a partition integer, error=%s", config[base.Partition], err)
 		return nil
 	}
+
 	state := collectionState{
 		Version:       "1",
 		ConsumerGroup: config[base.ConsumerGroup],
 		Topic:         config[base.Topic],
 		Partition:     int32(pid),
 		Offset:        sarama.OffsetOldest,
+	}
+
+	if config[base.UseOffsetOldest] == "1" {
+		return &state
+	}
+
+	data, err := checkpoint.GetCheckpoint(config)
+	if err != nil {
+		glog.Errorf("Failed to get last checkpoint, error=%s", err)
+		return nil
 	}
 
 	if data != nil {

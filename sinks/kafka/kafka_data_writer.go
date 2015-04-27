@@ -5,12 +5,13 @@ import (
 	"github.com/Shopify/sarama"
 	"github.com/chenziliang/descartes/base"
 	"github.com/golang/glog"
+	"strings"
 	"sync/atomic"
 	"time"
 )
 
 type KafkaDataWriter struct {
-	brokers       []base.BaseConfig
+	brokerConfig  base.BaseConfig
 	asyncProducer sarama.AsyncProducer
 	syncProducer  sarama.SyncProducer
 	state         int32
@@ -27,14 +28,14 @@ const (
 // base.Topic, base.Key which indicates where to write the data to Kafka
 // base.RequireAcks, base.FlushMemory, base.SyncWrite Kafka producer options
 
-func NewKafkaDataWriter(brokers []base.BaseConfig) base.DataWriter {
-	if len(brokers) == 0 {
-		glog.Errorf("Empty configs passed in")
+func NewKafkaDataWriter(brokerConfig base.BaseConfig) base.DataWriter {
+	if brokerConfig == nil {
+		glog.Errorf("nil configs passed in")
 		return nil
 	}
 
 	for _, k := range []string{base.Topic, base.Key} {
-		if _, ok := brokers[0][k]; !ok {
+		if _, ok := brokerConfig[k]; !ok {
 			glog.Errorf("%s config is required", k)
 			return nil
 		}
@@ -43,26 +44,22 @@ func NewKafkaDataWriter(brokers []base.BaseConfig) base.DataWriter {
 	config := sarama.NewConfig()
 	config.Producer.RequiredAcks = sarama.WaitForLocal
 	config.Producer.Flush.Frequency = 500 * time.Millisecond
-	var brokerList []string
-	for i := 0; i < len(brokers); i++ {
-		brokerList = append(brokerList, brokers[i][base.ServerURL])
-	}
-
-	asyncProducer, err := sarama.NewAsyncProducer(brokerList, config)
+	brokers := strings.Split(brokerConfig[base.ServerURL], ";")
+	asyncProducer, err := sarama.NewAsyncProducer(brokers, config)
 	if err != nil {
 		glog.Errorf("Failed to create Kafka async producer, error=%s", err)
 		return nil
 	}
 
 	syncConfig := sarama.NewConfig()
-	syncProducer, err := sarama.NewSyncProducer(brokerList, syncConfig)
+	syncProducer, err := sarama.NewSyncProducer(brokers, syncConfig)
 	if err != nil {
 		glog.Errorf("Failed to create Kafka sync producer, error=%s", err)
 		return nil
 	}
 
 	return &KafkaDataWriter{
-		brokers:       brokers,
+		brokerConfig:  brokerConfig,
 		asyncProducer: asyncProducer,
 		syncProducer:  syncProducer,
 		state:         initialStarted,
@@ -95,7 +92,7 @@ func (writer *KafkaDataWriter) Stop() {
 }
 
 func (writer *KafkaDataWriter) WriteData(data *base.Data) error {
-	if writer.brokers[0][base.SyncWrite] == "0" {
+	if writer.brokerConfig[base.SyncWrite] == "0" {
 		return writer.WriteDataSync(data)
 	} else {
 		return writer.WriteDataAsync(data)
@@ -110,8 +107,8 @@ func (writer *KafkaDataWriter) prepareData(data *base.Data) (*sarama.ProducerMes
 	}
 
 	msg := &sarama.ProducerMessage{
-		Topic: writer.brokers[0][base.Topic],
-		Key:   sarama.StringEncoder(writer.brokers[0][base.Key]),
+		Topic: writer.brokerConfig[base.Topic],
+		Key:   sarama.StringEncoder(writer.brokerConfig[base.Key]),
 		Value: sarama.StringEncoder(payload),
 	}
 	return msg, err
