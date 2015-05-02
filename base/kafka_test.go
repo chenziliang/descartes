@@ -7,7 +7,7 @@ import (
 
 func TestKafkaClient(t *testing.T) {
 	brokerConfig := BaseConfig{
-		ServerURL: "172.16.107.153:9092",
+		Brokers: "172.16.107.153:9092",
 	}
 	client := NewKafkaClient(brokerConfig, "consumerClient")
 
@@ -15,5 +15,5 @@ func TestKafkaClient(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to get topic and partitions, error=%s", err)
 	}
-	fmt.Println(topicPartitions)
+	// fmt.Println(topicPartitions)
 }

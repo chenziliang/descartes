@@ -18,7 +18,7 @@ const (
 )
 
 func NewKafkaClient(brokerConfig BaseConfig, clientName string) *KafkaClient {
-	if brokerConfig == nil || brokerConfig[ServerURL] == "" {
+	if brokerConfig[Brokers] == "" {
 		glog.Errorf("broker IP/port is required to create KafkaClient, got=%s", brokerConfig)
 		return nil
 	}
@@ -26,7 +26,7 @@ func NewKafkaClient(brokerConfig BaseConfig, clientName string) *KafkaClient {
 	config := sarama.NewConfig()
 	config.ClientID = clientName
 
-	brokers := strings.Split(brokerConfig[ServerURL], ";")
+	brokers := strings.Split(brokerConfig[Brokers], ";")
 	client, err := sarama.NewClient(brokers, config)
 	if err != nil {
 		glog.Errorf("Failed to create KafkaClient name=%s, error=%s", clientName, err)
@@ -40,7 +40,7 @@ func NewKafkaClient(brokerConfig BaseConfig, clientName string) *KafkaClient {
 }
 
 func (client *KafkaClient) BrokerIPs() []string {
-	return strings.Split(client.brokerConfig[ServerURL], ";")
+	return strings.Split(client.brokerConfig[Brokers], ";")
 }
 
 func (client *KafkaClient) TopicPartitions(topic string) (map[string][]int32, error) {
@@ -58,6 +58,10 @@ func (client *KafkaClient) TopicPartitions(topic string) (map[string][]int32, er
 
 	topicPartitions := make(map[string][]int32, len(topics))
 	for _, topic := range topics {
+		if topic == "" {
+			continue
+		}
+
 		partitions, err := client.client.Partitions(topic)
 		if err != nil {
 			glog.Errorf("Failed to get partitions for topic=%s from Kafka, error=%s", topic, err)

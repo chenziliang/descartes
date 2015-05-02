@@ -8,21 +8,25 @@ import (
 
 func TestKafkaDataWriter(t *testing.T) {
 	sinkConfig := base.BaseConfig{
-		base.ServerURL: "172.16.107.153:9092",
-		base.Topic:     "DescartesTest",
-		base.Key:       "MyKey",
-		base.Host:      "my.host.com",
-		base.Username:  "Ken Chen",
+		base.Brokers:  "172.16.107.153:9092",
+		base.Topic:    "CheckpointTopic_1",
+		base.Key:      "xxx",
+		base.Host:     "my.host.com",
+		base.Username: "Ken Chen",
 	}
 	writer := NewKafkaDataWriter(sinkConfig)
+	if writer == nil {
+		t.Errorf("Failed to create KafkaDataWriter")
+		return
+	}
 	writer.Start()
 	writer.Start()
 	defer writer.Stop()
 
 	for i := 0; i < 3; i++ {
 		metaInfo := map[string]string{
-			base.Topic:    "DescartesTest",
-			base.Key:      "MyKey",
+			base.Topic:    "CheckpointTopic_1",
+			base.Key:      "",
 			base.Host:     "my.host.com",
 			base.Username: "Ken Chen",
 		}

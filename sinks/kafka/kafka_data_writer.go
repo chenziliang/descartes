@@ -29,13 +29,8 @@ const (
 // base.RequireAcks, base.FlushMemory, base.SyncWrite Kafka producer options
 
 func NewKafkaDataWriter(brokerConfig base.BaseConfig) base.DataWriter {
-	if brokerConfig == nil {
-		glog.Errorf("nil configs passed in")
-		return nil
-	}
-
-	for _, k := range []string{base.Topic, base.Key} {
-		if _, ok := brokerConfig[k]; !ok {
+	for _, k := range []string{base.Topic, base.Key, base.Brokers} {
+		if val, ok := brokerConfig[k]; !ok || val == "" {
 			glog.Errorf("%s config is required", k)
 			return nil
 		}
@@ -44,7 +39,7 @@ func NewKafkaDataWriter(brokerConfig base.BaseConfig) base.DataWriter {
 	config := sarama.NewConfig()
 	config.Producer.RequiredAcks = sarama.WaitForLocal
 	config.Producer.Flush.Frequency = 500 * time.Millisecond
-	brokers := strings.Split(brokerConfig[base.ServerURL], ";")
+	brokers := strings.Split(brokerConfig[base.Brokers], ";")
 	asyncProducer, err := sarama.NewAsyncProducer(brokers, config)
 	if err != nil {
 		glog.Errorf("Failed to create Kafka async producer, error=%s", err)

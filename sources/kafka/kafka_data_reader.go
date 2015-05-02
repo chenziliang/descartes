@@ -146,7 +146,7 @@ func (reader *KafkaDataReader) IndexData() error {
 	for atomic.LoadInt32(&reader.collecting) != stopped {
 		select {
 		case err, ok := <-reader.partitionConsumer.Errors():
-			if !ok {
+			if ok {
 				glog.Errorf("Encounter error while collecting data, error=%s", err)
 			}
 
@@ -240,6 +240,9 @@ func getCheckpoint(checkpoint base.Checkpointer, config base.BaseConfig) *collec
 
 	if config[base.UseOffsetOldest] == "1" {
 		return &state
+	} else if config[base.UseOffsetNewest] == "1" {
+		state.Offset = sarama.OffsetNewest
+		return &state
 	}
 
 	data, err := checkpoint.GetCheckpoint(config)
@@ -254,9 +257,10 @@ func getCheckpoint(checkpoint base.Checkpointer, config base.BaseConfig) *collec
 			glog.Errorf("Failed to unmarshal data=%s, doesn't conform to collectionState", string(data))
 			return nil
 		}
+	} else {
+		glog.Infof("No checkpoint found for consumer group=%s, topic=%s, partition=%s, use oldest one",
+			config[base.ConsumerGroup], config[base.Topic], config[base.Partition])
 	}
 
-	glog.Infof("No checkpoint found for consumer group=%s, topic=%s, partition=%s, use oldest one",
-		config[base.ConsumerGroup], config[base.Topic], config[base.Partition])
 	return &state
 }

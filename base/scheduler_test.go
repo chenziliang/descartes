@@ -9,7 +9,7 @@ import (
 )
 
 func test(n int, id int) JobFunc {
-	return func() error {
+	return func(param JobParam) error {
 		// fmt.Println(fmt.Sprintf("id=%d call every %d second.", id, n))
 		return nil
 	}

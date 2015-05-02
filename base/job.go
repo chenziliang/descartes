@@ -7,7 +7,7 @@ import (
 	"sync/atomic"
 )
 
-type JobParam interface {}
+type JobParam interface{}
 
 type JobFunc func(params JobParam) error
 
@@ -56,7 +56,7 @@ func NewJob(f JobFunc, when int64, interval int64, params JobParam) *BaseJob {
 		id:       strconv.FormatInt(atomic.AddInt64(&jobId, 1), 10),
 		when:     when,
 		interval: interval,
-		params:    params,
+		params:   params,
 	}
 }
 

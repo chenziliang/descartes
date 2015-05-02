@@ -35,7 +35,7 @@ func TestSnowDataReader(t *testing.T) {
 	}
 
 	brokerConfig := base.BaseConfig{
-		base.ServerURL: "172.16.107.153:9092",
+		base.Brokers: "172.16.107.153:9092",
 	}
 
 	client := base.NewKafkaClient(brokerConfig, "consumerClient")
