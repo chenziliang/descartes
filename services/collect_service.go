@@ -176,17 +176,17 @@ func (ss *CollectService) handleTasks(data *base.Data) {
 			return
 		}
 
-		if _, ok := ss.jobs[taskConfig[base.Key]]; ok {
+		if _, ok := ss.jobs[taskConfig[base.TaskConfigKey]]; ok {
 			glog.Infof("Use cached collector, app=%s", taskConfig[base.App])
 		} else {
 		    job := ss.jobFactory.CreateJob(taskConfig[base.App], taskConfig)
 			if job == nil {
 				return
 			}
-			ss.jobs[taskConfig[base.Key]] = job
+			ss.jobs[taskConfig[base.TaskConfigKey]] = job
 			job.Start()
 		}
-		glog.Infof("Handle task=%s", taskConfig)
-		go ss.jobs[taskConfig[base.Key]].Callback()
+		// glog.Infof("Handle task=%s", taskConfig)
+		go ss.jobs[taskConfig[base.TaskConfigKey]].Callback()
 	}
 }

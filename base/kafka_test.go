@@ -15,5 +15,5 @@ func TestKafkaClient(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to get topic and partitions, error=%s", err)
 	}
-	// fmt.Println(topicPartitions)
+	fmt.Println(topicPartitions)
 }

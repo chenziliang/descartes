@@ -23,17 +23,17 @@ func encodeURL(url string) string {
 	return buf.String()
 }
 
-func snowTopic(serverURL, username string) string {
+func GenerateTopic(app, serverURL, username string) string {
 	url := encodeURL(serverURL)
-	return strings.Join([]string{"snow", url, username}, "_")
+	return strings.Join([]string{app, url, username}, "_")
 }
 
-func snowCheckpointTopic(config base.BaseConfig) string {
-	url := encodeURL(config[base.ServerURL])
-	return strings.Join([]string{"snow", config["Endpoint"], url, "ckpt"}, "_")
+func GenerateCheckpointTopic(app, serverURL, addition string) string {
+	url := encodeURL(serverURL)
+	return strings.Join([]string{app, addition, url, "ckpt"}, "_")
 }
 
-func kafkaCheckpointTopic(config base.BaseConfig) string {
+func KafkaCheckpointTopic(config base.BaseConfig) string {
 	return strings.Join([]string{config[base.Topic], config[base.Partition], "ckpt"}, "_")
 }
 
@@ -118,14 +118,14 @@ func (factory *JobFactory) newSnowJob(config base.BaseConfig) base.Job {
 		return nil
 	}
 
-	topic := snowTopic(config[base.ServerURL], config[base.Username])
 	brokerConfig := base.BaseConfig{
 		base.Brokers:   config[base.Brokers],
-		base.Topic:     topic,
-		base.Key:       topic,
+		base.Topic:     config[base.Topic],
+		base.Key:       config[base.Topic],
 	}
 
-	ckTopic := snowCheckpointTopic(config)
+	ckTopic := GenerateCheckpointTopic(config[base.App], config[base.ServerURL],
+	                                   config["Endpoint"])
 	config[base.CheckpointTopic] = ckTopic
 	config[base.CheckpointKey] = ckTopic
 	config[base.CheckpointPartition] = "0"
@@ -161,7 +161,7 @@ func (factory *JobFactory) newSnowJob(config base.BaseConfig) base.Job {
 }
 
 func (factory *JobFactory) newKafkaJob(config base.BaseConfig) base.Job {
-	ckTopic := kafkaCheckpointTopic(config)
+	ckTopic := KafkaCheckpointTopic(config)
 	config[base.CheckpointTopic] = ckTopic
 	config[base.CheckpointKey] = ckTopic
 	config[base.CheckpointPartition] = "0"

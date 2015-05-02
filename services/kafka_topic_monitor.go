@@ -14,10 +14,11 @@ type KafkaMetaDataMonitor struct {
 	ss                  *ScheduleService
 	client              *base.KafkaClient
 	topicPartitions     map[string]map[int32]bool
+	topicConfigs        map[string]base.BaseConfig
+	configChan          chan base.BaseConfig
 	started             int32
 }
 
-// TODO
 // For now, only support one kafka cluster
 func NewKafkaMetaDataMonitor(config base.BaseConfig, ss *ScheduleService) *KafkaMetaDataMonitor {
 	client := base.NewKafkaClient(config, "MonitorClient")
@@ -26,6 +27,8 @@ func NewKafkaMetaDataMonitor(config base.BaseConfig, ss *ScheduleService) *Kafka
 		ss:                  ss,
 		client:              client,
 		topicPartitions:     make(map[string]map[int32]bool, 10),
+		topicConfigs:		 make(map[string]base.BaseConfig, 10),
+		configChan:		     make(chan base.BaseConfig, 10),
 	}
 }
 
@@ -50,17 +53,34 @@ func (mon *KafkaMetaDataMonitor) Stop() {
 	glog.Infof("KafkaMetaDataMonitor stopped...")
 }
 
-func (mon *KafkaMetaDataMonitor) monitorNewTopicPartitions() {
-	checkInterval := 30 * time.Second
+func (mon *KafkaMetaDataMonitor) AddTopicConfig(config base.BaseConfig) {
+	mon.configChan <- config
+}
 
+func (mon *KafkaMetaDataMonitor) doAddTopicConfig(config base.BaseConfig) {
+	glog.Infof("Add topic=%s", config[base.Topic])
+	if _, ok := config[base.Topic]; !ok {
+		glog.Errorf("Topic is missing in config=%s", config)
+		return
+	}
+	mon.topicConfigs[config[base.Topic]] = config
+}
+
+func (mon *KafkaMetaDataMonitor) monitorNewTopicPartitions() {
+    ticker := time.Tick(30 * time.Second)
 	for atomic.LoadInt32(&mon.started) != 0 {
-		mon.client.Client().RefreshMetadata()
-		latestTopicPartitions, err := mon.client.TopicPartitions("")
-		if err != nil {
-			continue
+		select {
+		case <-ticker:
+			mon.client.Client().RefreshMetadata()
+			latestTopicPartitions, err := mon.client.TopicPartitions("")
+			if err != nil {
+				continue
+			}
+			mon.checkNewTopicPartitions(latestTopicPartitions)
+
+		case config := <-mon.configChan:
+			mon.doAddTopicConfig(config)
 		}
-		mon.checkNewTopicPartitions(latestTopicPartitions)
-		time.Sleep(checkInterval)
 	}
 }
 
@@ -90,20 +110,21 @@ func (mon *KafkaMetaDataMonitor) handleNewPartition(topic string, partition int3
 		return false
 	}
 
-	// FIXME for the target ServerURL when new partition is found
-	config := base.BaseConfig {
-		base.ServerURL: "https://localhost:8089",
-		base.Username: "admin",
-		base.Password: "admin",
-		base.Index: "main",
-		base.Source: "descartes",
-		base.Brokers: strings.Join(mon.client.BrokerIPs(), ";"),
-		base.App: base.KafkaApp,
-		base.Topic: topic,
-		base.TaskConfigKey: topic + "_" + fmt.Sprintf("%d", partition),
-		base.Partition: fmt.Sprintf("%d", partition),
-		base.Interval: "600",
+	if _, ok := mon.topicConfigs[topic]; !ok {
+		glog.Errorf("Topic=%s is not registed yet, do nothing", topic)
+		return false
 	}
+
+	topicConfig := mon.topicConfigs[topic]
+	config := make(base.BaseConfig, len(topicConfig))
+	for k, v := range topicConfig {
+		config[k] = v
+	}
+	config[base.Brokers] = strings.Join(mon.client.BrokerIPs(), ";")
+	config[base.App] = base.KafkaApp
+	config[base.TaskConfigKey] = topic + "_" + fmt.Sprintf("%d", partition)
+	config[base.Partition] = fmt.Sprintf("%d", partition)
+
 	mon.ss.AddJob(base.TaskConfig, config)
 	glog.Infof("Handle new topic=%s, partition=%d", topic, partition)
 	return true

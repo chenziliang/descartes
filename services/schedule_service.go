@@ -298,11 +298,16 @@ func (ss *ScheduleService) handleNewTask(config base.BaseConfig) {
 		return
 	}
 
-	job := ss.AddJob(base.TaskConfig, config)
-	if job == nil {
+	// This is an exception
+	if config[base.App] == base.KafkaApp {
+		ss.partitionMonitor.AddTopicConfig(config)
 		return
 	}
 
+	job := ss.AddJob(base.TaskConfig, config)
+	if job == nil {
+	    return
+	}
 	ss.jobs[key] = job
 	ss.jobConfigs[key] = config
 }

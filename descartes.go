@@ -78,12 +78,16 @@ func writeTaskConfigs(brokerConfig base.BaseConfig) {
 	var allTasks []base.BaseConfig
 	for _, tasks := range snowTasks {
 		for _, task := range tasks {
+			task[base.Topic] = services.GenerateTopic(task[base.App],
+			                        task[base.ServerURL], task[base.Username])
 			allTasks = append(allTasks, task)
 		}
 	}
 
 	for _, tasks := range kafkaTasks {
 		for _, task := range tasks {
+			task[base.Topic] = services.GenerateTopic("snow",
+			                         task["SourceServerURL"], task["SourceUsername"])
 			allTasks = append(allTasks, task)
 		}
 	}
