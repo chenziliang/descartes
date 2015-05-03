@@ -11,7 +11,7 @@ type person struct {
 	Age       int
 }
 
-func TestCheckpointer(t *testing.T) {
+func TestFileCheckpointer(t *testing.T) {
 	keyInfo := map[string]string{
 		CheckpointDir:       ".",
 		CheckpointNamespace: "myapp",
@@ -21,7 +21,7 @@ func TestCheckpointer(t *testing.T) {
 	ck := NewFileCheckpointer()
 	data, err := ck.GetCheckpoint(keyInfo)
 	if data != nil || err != nil {
-		t.Error("GetCheckpoint should not error out, but got error=%s or data=%s", err, data)
+		t.Errorf("GetCheckpoint should not error out, but got error=%s or data=%s", err, data)
 	}
 
 	p := person{

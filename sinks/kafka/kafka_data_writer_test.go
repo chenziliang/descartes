@@ -8,11 +8,11 @@ import (
 
 func TestKafkaDataWriter(t *testing.T) {
 	sinkConfig := base.BaseConfig{
-		base.Brokers:  "172.16.107.153:9092",
-		base.Topic:    "CheckpointTopic_1",
-		base.Key:      "xxx",
-		base.Host:     "my.host.com",
-		base.Username: "Ken Chen",
+		base.KafkaBrokers: "172.16.107.153:9092",
+		base.KafkaTopic:   "CheckpointTopic_1",
+		base.Key:          "xxx",
+		base.Host:         "my.host.com",
+		base.Username:     "Ken Chen",
 	}
 	writer := NewKafkaDataWriter(sinkConfig)
 	if writer == nil {
@@ -25,10 +25,10 @@ func TestKafkaDataWriter(t *testing.T) {
 
 	for i := 0; i < 3; i++ {
 		metaInfo := map[string]string{
-			base.Topic:    "CheckpointTopic_1",
-			base.Key:      "",
-			base.Host:     "my.host.com",
-			base.Username: "Ken Chen",
+			base.KafkaTopic: "CheckpointTopic_1",
+			base.Key:        "",
+			base.Host:       "my.host.com",
+			base.Username:   "Ken Chen",
 		}
 		rawData := [][]byte{[]byte("sync:a=b,c=d,1=2,3=4"), []byte("sync:1=2,3=4,a=b,c=d")}
 		data := base.NewData(metaInfo, rawData)

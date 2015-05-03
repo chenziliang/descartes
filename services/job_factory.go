@@ -28,15 +28,6 @@ func GenerateTopic(app, serverURL, username string) string {
 	return strings.Join([]string{app, url, username}, "_")
 }
 
-func GenerateCheckpointTopic(app, serverURL, addition string) string {
-	url := encodeURL(serverURL)
-	return strings.Join([]string{app, addition, url, "ckpt"}, "_")
-}
-
-func KafkaCheckpointTopic(config base.BaseConfig) string {
-	return strings.Join([]string{config[base.Topic], config[base.Partition], "ckpt"}, "_")
-}
-
 type ReaderJob struct {
 	*base.BaseJob
 	reader base.DataReader
@@ -90,7 +81,7 @@ func (factory *JobFactory) Apps() []string {
 }
 
 func (factory *JobFactory) getKafkaClient(config base.BaseConfig) *base.KafkaClient {
-	brokers := strings.Split(config[base.Brokers], ";")
+	brokers := strings.Split(config[base.KafkaBrokers], ";")
 	sort.Sort(sort.StringSlice(brokers))
 	sortedBrokers := strings.Join(brokers, ";")
 
@@ -113,29 +104,15 @@ func (factory *JobFactory) CloseClients() {
 }
 
 func (factory *JobFactory) newSnowJob(config base.BaseConfig) base.Job {
-	client := factory.getKafkaClient(config)
-	if client == nil {
-		return nil
-	}
-
-	brokerConfig := base.BaseConfig{
-		base.Brokers:   config[base.Brokers],
-		base.Topic:     config[base.Topic],
-		base.Key:       config[base.Topic],
-	}
-
-	ckTopic := GenerateCheckpointTopic(config[base.App], config[base.ServerURL],
-	                                   config["Endpoint"])
-	config[base.CheckpointTopic] = ckTopic
-	config[base.CheckpointKey] = ckTopic
-	config[base.CheckpointPartition] = "0"
-
-	writer := kafkawriter.NewKafkaDataWriter(brokerConfig)
+	config[base.Key] = config[base.KafkaTopic]
+	writer := kafkawriter.NewKafkaDataWriter(config)
 	if writer == nil {
 		return nil
 	}
 
-	checkpoint := base.NewKafkaCheckpointer(client)
+	keyParts := []string{encodeURL(config[base.ServerURL]), config[base.Username], config["Endpoint"]}
+	config[base.Key] = strings.Join(keyParts, "_")
+	checkpoint := base.NewCassandraCheckpointer(config)
 	if checkpoint == nil {
 		return nil
 	}
@@ -161,11 +138,6 @@ func (factory *JobFactory) newSnowJob(config base.BaseConfig) base.Job {
 }
 
 func (factory *JobFactory) newKafkaJob(config base.BaseConfig) base.Job {
-	ckTopic := KafkaCheckpointTopic(config)
-	config[base.CheckpointTopic] = ckTopic
-	config[base.CheckpointKey] = ckTopic
-	config[base.CheckpointPartition] = "0"
-
 	client := factory.getKafkaClient(config)
 	if client == nil {
 		return nil
@@ -176,7 +148,9 @@ func (factory *JobFactory) newKafkaJob(config base.BaseConfig) base.Job {
 		return nil
 	}
 
-	checkpoint := base.NewKafkaCheckpointer(client)
+	keyParts := []string{config[base.KafkaTopic], config[base.KafkaPartition]}
+	config[base.Key] = strings.Join(keyParts, "_")
+	checkpoint := base.NewCassandraCheckpointer(config)
 	if checkpoint == nil {
 		return nil
 	}

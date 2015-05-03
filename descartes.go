@@ -14,6 +14,32 @@ import (
 	"time"
 )
 
+
+func getGlobalConfig(fileName string) (base.BaseConfig, error) {
+	content, err := ioutil.ReadFile(fileName)
+	if err != nil {
+		glog.Errorf("Failed to read %s, error=%s", fileName, err)
+		return nil, err
+	}
+
+	configs := make(map[string]base.BaseConfig)
+	err = json.Unmarshal(content, &configs)
+	if err != nil {
+		glog.Errorf("Failed to unmarshal %s, error=%s", fileName, err)
+		return nil, err
+	}
+
+	globalConfig := make(map[string]string)
+	for _, config := range configs {
+		for k, v := range config {
+			globalConfig[k] = v
+		}
+	}
+
+	return globalConfig, nil
+}
+
+
 func getTasks(fileName string) (map[string][]base.BaseConfig, error) {
 	content, err := ioutil.ReadFile(fileName)
 	if err != nil {
@@ -39,7 +65,7 @@ func setupSignalHandler() <-chan os.Signal {
 
 func handleDataCollection(brokerConfig base.BaseConfig) {
 	config := base.BaseConfig{
-		base.Brokers: brokerConfig[base.Brokers],
+		base.KafkaBrokers: brokerConfig[base.KafkaBrokers],
 	}
 
 	collect := services.NewCollectService(config)
@@ -55,22 +81,23 @@ func handleDataCollection(brokerConfig base.BaseConfig) {
 	collect.Stop()
 }
 
-func writeTaskConfigs(brokerConfig base.BaseConfig) {
+func writeTaskConfigs(brokerConfig base.BaseConfig, snow_task_file, kafka_task_file string) {
 	config := base.BaseConfig{
-		base.Brokers: brokerConfig[base.Brokers],
-		base.Topic: base.TaskConfig,
+		base.KafkaBrokers: brokerConfig[base.KafkaBrokers],
+		base.CassandraSeeds: brokerConfig[base.CassandraSeeds],
+		base.KafkaTopic: base.TaskConfig,
 		base.Key: base.TaskConfig,
 	}
 	configWriter := mgmt.NewTaskConfigWriter(config)
 	configWriter.Start()
 	defer configWriter.Stop()
 
-	snowTasks, err := getTasks("snow_tasks.json2")
+	snowTasks, err := getTasks(snow_task_file)
 	if err != nil {
 		return
 	}
 
-	kafkaTasks, err := getTasks("kafka_tasks.json2")
+	kafkaTasks, err := getTasks(kafka_task_file)
 	if err != nil {
 		return
 	}
@@ -78,16 +105,27 @@ func writeTaskConfigs(brokerConfig base.BaseConfig) {
 	var allTasks []base.BaseConfig
 	for _, tasks := range snowTasks {
 		for _, task := range tasks {
-			task[base.Topic] = services.GenerateTopic(task[base.App],
+			task[base.KafkaTopic] = services.GenerateTopic(task[base.App],
 			                        task[base.ServerURL], task[base.Username])
+			task[base.KafkaBrokers] = brokerConfig[base.KafkaBrokers]
+			task[base.CassandraSeeds] = brokerConfig[base.CassandraSeeds]
+			task[base.CassandraKeyspace] = brokerConfig[base.CassandraKeyspace]
+			task[base.CheckpointTable] = brokerConfig[base.CheckpointTable]
+			task[base.TaskConfigAction] = base.TaskConfigNew
+			task[base.TaskConfigKey] = task[base.KafkaTopic] + "_" + task["Endpoint"]
 			allTasks = append(allTasks, task)
 		}
 	}
 
 	for _, tasks := range kafkaTasks {
 		for _, task := range tasks {
-			task[base.Topic] = services.GenerateTopic("snow",
+			task[base.KafkaTopic] = services.GenerateTopic("snow",
 			                         task["SourceServerURL"], task["SourceUsername"])
+			task[base.TaskConfigAction] = base.TaskConfigNew
+			task[base.KafkaBrokers] = brokerConfig[base.KafkaBrokers]
+			task[base.CassandraSeeds] = brokerConfig[base.CassandraSeeds]
+			task[base.CassandraKeyspace] = brokerConfig[base.CassandraKeyspace]
+			task[base.CheckpointTable] = brokerConfig[base.CheckpointTable]
 			allTasks = append(allTasks, task)
 		}
 	}
@@ -111,7 +149,9 @@ func handleScheduling(brokerConfig base.BaseConfig) {
 }
 
 func main() {
-	role := flag.String("role", "", "[task_scheduler|data_collector]")
+	role := flag.String("role", "", "[task_scheduler|data_collector|mgmt]")
+	snow_task_file := flag.String("snow_task_file", "snow_tasks.json", "")
+	kafka_task_file := flag.String("kafka_task_file", "kafka_tasks.json", "")
 	flag.Parse()
 
 	if *role == "" {
@@ -119,16 +159,17 @@ func main() {
 		os.Exit(1)
 	}
 
-	brokerConfig := base.BaseConfig{
-		"Brokers": "172.16.107.153:9092;172.16.107.153:9093;172.16.107.153:9094",
+	globalConfig, err := getGlobalConfig("global_settings.json")
+	if err != nil {
+		return
 	}
 
 	if *role == "task_scheduler" {
-		handleScheduling(brokerConfig)
+		handleScheduling(globalConfig)
 	} else if *role == "data_collector" {
-		handleDataCollection(brokerConfig)
+		handleDataCollection(globalConfig)
 	} else if *role == "generate_config" {
-	    writeTaskConfigs(brokerConfig)
+	    writeTaskConfigs(globalConfig, *snow_task_file, *kafka_task_file)
 	} else {
 		flag.PrintDefaults()
 		os.Exit(1)

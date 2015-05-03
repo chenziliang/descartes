@@ -58,12 +58,12 @@ func (mon *KafkaMetaDataMonitor) AddTopicConfig(config base.BaseConfig) {
 }
 
 func (mon *KafkaMetaDataMonitor) doAddTopicConfig(config base.BaseConfig) {
-	glog.Infof("Add topic=%s", config[base.Topic])
-	if _, ok := config[base.Topic]; !ok {
+	glog.Infof("Add topic=%s", config[base.KafkaTopic])
+	if _, ok := config[base.KafkaTopic]; !ok {
 		glog.Errorf("Topic is missing in config=%s", config)
 		return
 	}
-	mon.topicConfigs[config[base.Topic]] = config
+	mon.topicConfigs[config[base.KafkaTopic]] = config
 }
 
 func (mon *KafkaMetaDataMonitor) monitorNewTopicPartitions() {
@@ -120,10 +120,10 @@ func (mon *KafkaMetaDataMonitor) handleNewPartition(topic string, partition int3
 	for k, v := range topicConfig {
 		config[k] = v
 	}
-	config[base.Brokers] = strings.Join(mon.client.BrokerIPs(), ";")
+	// config[base.KafkaBrokers] = strings.Join(mon.client.BrokerIPs(), ";")
 	config[base.App] = base.KafkaApp
 	config[base.TaskConfigKey] = topic + "_" + fmt.Sprintf("%d", partition)
-	config[base.Partition] = fmt.Sprintf("%d", partition)
+	config[base.KafkaPartition] = fmt.Sprintf("%d", partition)
 
 	mon.ss.AddJob(base.TaskConfig, config)
 	glog.Infof("Handle new topic=%s, partition=%d", topic, partition)

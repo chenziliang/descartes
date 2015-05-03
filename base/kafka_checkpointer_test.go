@@ -6,7 +6,7 @@ import (
 
 func TestKafkaCheckponter(t *testing.T) {
 	brokerConfig := BaseConfig{
-		Brokers: "172.16.107.153:9092",
+		KafkaBrokers: "172.16.107.153:9092",
 	}
 	client := NewKafkaClient(brokerConfig, "consumerClient")
 

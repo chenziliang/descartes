@@ -43,14 +43,14 @@ const (
 // FIXME support more config options
 func NewKafkaDataReader(client *base.KafkaClient, config base.BaseConfig,
 	writer base.DataWriter, checkpoint base.Checkpointer) *KafkaDataReader {
-	for _, k := range []string{base.Topic, base.Partition} {
+	for _, k := range []string{base.KafkaTopic, base.KafkaPartition} {
 		if _, ok := config[k]; !ok {
 			glog.Errorf("Requried %s is missing.", k)
 			return nil
 		}
 	}
 
-	topic, partition := config[base.Topic], config[base.Partition]
+	topic, partition := config[base.KafkaTopic], config[base.KafkaPartition]
 	master, err := sarama.NewConsumerFromClient(client.Client())
 	if err != nil {
 		glog.Errorf("Failed to create Kafka consumer, error=%s", err)
@@ -68,9 +68,9 @@ func NewKafkaDataReader(client *base.KafkaClient, config base.BaseConfig,
 		return nil
 	}
 
-	pid, err := strconv.Atoi(config[base.Partition])
+	pid, err := strconv.Atoi(config[base.KafkaPartition])
 	if err != nil {
-		glog.Errorf("Partition is expected as a number, got %s", config[base.Partition])
+		glog.Errorf("Partition is expected as a number, got %s", config[base.KafkaPartition])
 		return nil
 	}
 
@@ -224,16 +224,16 @@ func (reader *KafkaDataReader) saveOffset(offset int64) {
 }
 
 func getCheckpoint(checkpoint base.Checkpointer, config base.BaseConfig) *collectionState {
-	pid, err := strconv.Atoi(config[base.Partition])
+	pid, err := strconv.Atoi(config[base.KafkaPartition])
 	if err != nil {
-		glog.Errorf("Failed to convert %s to a partition integer, error=%s", config[base.Partition], err)
+		glog.Errorf("Failed to convert %s to a partition integer, error=%s", config[base.KafkaPartition], err)
 		return nil
 	}
 
 	state := collectionState{
 		Version:       "1",
-		ConsumerGroup: config[base.ConsumerGroup],
-		Topic:         config[base.Topic],
+		ConsumerGroup: config[base.KafkaConsumerGroup],
+		Topic:         config[base.KafkaTopic],
 		Partition:     int32(pid),
 		Offset:        sarama.OffsetOldest,
 	}
@@ -259,7 +259,7 @@ func getCheckpoint(checkpoint base.Checkpointer, config base.BaseConfig) *collec
 		}
 	} else {
 		glog.Infof("No checkpoint found for consumer group=%s, topic=%s, partition=%s, use oldest one",
-			config[base.ConsumerGroup], config[base.Topic], config[base.Partition])
+			config[base.KafkaConsumerGroup], config[base.KafkaTopic], config[base.KafkaPartition])
 	}
 
 	return &state

@@ -34,15 +34,16 @@ func TestSnowDataReader(t *testing.T) {
 		base.CheckpointPartition: fmt.Sprintf("%d", partition),
 	}
 
-	brokerConfig := base.BaseConfig{
-		base.Brokers: "172.16.107.153:9092",
+	cassandraConfig := base.BaseConfig{
+		base.CassandraSeeds:    "172.16.107.153:9042",
+		base.CassandraKeyspace: "descartes",
+		base.CheckpointTable:   "task_ckpts",
 	}
-
-	client := base.NewKafkaClient(brokerConfig, "consumerClient")
+	_ = cassandraConfig
 
 	writer := &base.StdoutDataWriter{}
-	// ck := base.NewFileCheckpointer()
-	ck := base.NewKafkaCheckpointer(client)
+	ck := base.NewFileCheckpointer()
+	// ck := base.NewCassandraCheckpointer(cassandraConfig)
 	writer.Start()
 	dataReader := NewSnowDataReader(sourceConfig, writer, ck)
 	dataReader.IndexData()

@@ -66,7 +66,7 @@ func (ss *ScheduleService) Start() {
 	ss.jobScheduler.Start()
 	go ss.monitorTasks()
 	go ss.monitorHeartBeats()
-	go ss.doDispatchTask()
+	go ss.publishTask()
 
 	glog.Infof("ScheduleService started...")
 }
@@ -102,12 +102,12 @@ func (ss *ScheduleService) dispatchTaskToKafka(params base.JobParam) error {
 	return nil
 }
 
-func (ss *ScheduleService) doDispatchTask() {
+func (ss *ScheduleService) publishTask() {
 	// FIXME base.Key
 	brokerConfig := base.BaseConfig{
-		base.Brokers: ss.brokerConfig[base.Brokers],
-		base.Topic:     base.Tasks,
-		base.Key:       base.Tasks,
+		base.KafkaBrokers: ss.brokerConfig[base.KafkaBrokers],
+		base.KafkaTopic:   base.Tasks,
+		base.Key:          base.Tasks,
 	}
 
 	writer := kafkawriter.NewKafkaDataWriter(brokerConfig)
@@ -172,7 +172,7 @@ func (ss *ScheduleService) getAvailableGatheringHost(config base.BaseConfig) str
 }
 
 func (ss *ScheduleService) doMonitor(topic string) {
-	checkpoint := base.NewNullCheckpoint()
+	checkpoint := base.NewNullCheckpointer()
 	writer := memory.NewMemoryDataWriter()
 	topicPartitions, err := ss.client.TopicPartitions(topic)
 	if err != nil {
@@ -181,8 +181,8 @@ func (ss *ScheduleService) doMonitor(topic string) {
 
 	for _, partition := range topicPartitions[topic] {
 		config := base.BaseConfig{
-			base.Topic:               topic,
-			base.Partition:           fmt.Sprintf("%d", partition),
+			base.KafkaTopic:               topic,
+			base.KafkaPartition:           fmt.Sprintf("%d", partition),
 			base.CheckpointTopic:     topic + "ckpt",
 			base.CheckpointKey:       topic + "ckpt",
 			base.CheckpointPartition: "0",

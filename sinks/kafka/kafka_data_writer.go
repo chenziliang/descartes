@@ -25,11 +25,11 @@ const (
 
 // NewKafaDataWriter
 // @BaseConfig: contains
-// base.Topic, base.Key which indicates where to write the data to Kafka
+// base.KafkaTopic, base.Key which indicates where to write the data to Kafka
 // base.RequireAcks, base.FlushMemory, base.SyncWrite Kafka producer options
 
 func NewKafkaDataWriter(brokerConfig base.BaseConfig) base.DataWriter {
-	for _, k := range []string{base.Topic, base.Key, base.Brokers} {
+	for _, k := range []string{base.KafkaTopic, base.KafkaBrokers} {
 		if val, ok := brokerConfig[k]; !ok || val == "" {
 			glog.Errorf("%s config is required", k)
 			return nil
@@ -39,7 +39,7 @@ func NewKafkaDataWriter(brokerConfig base.BaseConfig) base.DataWriter {
 	config := sarama.NewConfig()
 	config.Producer.RequiredAcks = sarama.WaitForLocal
 	config.Producer.Flush.Frequency = 500 * time.Millisecond
-	brokers := strings.Split(brokerConfig[base.Brokers], ";")
+	brokers := strings.Split(brokerConfig[base.KafkaBrokers], ";")
 	asyncProducer, err := sarama.NewAsyncProducer(brokers, config)
 	if err != nil {
 		glog.Errorf("Failed to create Kafka async producer, error=%s", err)
@@ -102,7 +102,7 @@ func (writer *KafkaDataWriter) prepareData(data *base.Data) (*sarama.ProducerMes
 	}
 
 	msg := &sarama.ProducerMessage{
-		Topic: writer.brokerConfig[base.Topic],
+		Topic: writer.brokerConfig[base.KafkaTopic],
 		Key:   sarama.StringEncoder(writer.brokerConfig[base.Key]),
 		Value: sarama.StringEncoder(payload),
 	}

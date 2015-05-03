@@ -96,7 +96,7 @@ func doTest() {
 
 func TestKafkaDataReader(t *testing.T) {
 	brokerConfig := base.BaseConfig{
-		base.Brokers: "172.16.107.153:9092",
+		base.KafkaBrokers: "172.16.107.153:9092",
 	}
 	client := base.NewKafkaClient(brokerConfig, "consumerClient")
 	if client == nil {
@@ -106,17 +106,27 @@ func TestKafkaDataReader(t *testing.T) {
 	consumerGroup, topic := "testConsumerGroup", "DescartesTest"
 	ckTopic := "CheckpointTopic_1"
 	config := map[string]string{
-		base.ConsumerGroup:       consumerGroup,
-		base.Topic:               topic,
-		base.Partition:           "0",
+		base.KafkaConsumerGroup:  consumerGroup,
+		base.KafkaTopic:          topic,
+		base.KafkaPartition:      "0",
 		base.CheckpointTopic:     ckTopic,
 		base.CheckpointPartition: "0",
+		base.CheckpointDir:       ".",
+		base.CheckpointNamespace: "kafka_data_reader",
+		base.CheckpointKey:       ckTopic,
 	}
+
+	cassandraConfig := base.BaseConfig{
+		base.CassandraSeeds:    "172.16.107.153:9042",
+		base.CassandraKeyspace: "descartes",
+		base.CheckpointTable:   "task_ckpts",
+	}
+	_ = cassandraConfig
 
 	writer := &base.StdoutDataWriter{}
 	writer.Start()
 
-	ck := base.NewKafkaCheckpointer(client)
+	ck := base.NewFileCheckpointer()
 	ck.Start()
 
 	dataReader := NewKafkaDataReader(client, config, writer, ck)

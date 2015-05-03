@@ -11,7 +11,7 @@ type Checkpointer interface {
 type NullCheckpointer struct {
 }
 
-func NewNullCheckpoint() *NullCheckpointer {
+func NewNullCheckpointer() *NullCheckpointer {
 	return &NullCheckpointer{}
 }
 

@@ -78,8 +78,8 @@ func (ss *CollectService) Stop() {
 
 func (ss *CollectService) doHeartBeats() {
 	brokerConfig := base.BaseConfig{
-		base.Brokers:   ss.brokerConfig[base.Brokers],
-		base.Topic:     base.TaskStats,
+		base.KafkaBrokers:   ss.brokerConfig[base.KafkaBrokers],
+		base.KafkaTopic:     base.TaskStats,
 		base.Key:       base.TaskStats,
 	}
 
@@ -117,7 +117,7 @@ func (ss *CollectService) doHeartBeats() {
 }
 
 func (ss *CollectService) monitorTasks(topic string) {
-	checkpoint := base.NewNullCheckpoint()
+	checkpoint := base.NewNullCheckpointer()
 	writer := memory.NewMemoryDataWriter()
 	topicPartitions, err := ss.client.TopicPartitions(topic)
 	if err != nil {
@@ -126,8 +126,8 @@ func (ss *CollectService) monitorTasks(topic string) {
 
 	for _, partition := range topicPartitions[topic] {
 		config := base.BaseConfig{
-			base.Topic:               topic,
-			base.Partition:           fmt.Sprintf("%d", partition),
+			base.KafkaTopic:               topic,
+			base.KafkaPartition:           fmt.Sprintf("%d", partition),
 		    base.UseOffsetNewest:     "1",
 		}
 
