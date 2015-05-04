@@ -48,4 +48,6 @@ const (
 	UseOffsetNewest     = "UseOffsetNewest"
 	UseOffsetOldest     = "UseOffsetOldest"
 	Username            = "Username"
+	ZooKeeperElectionPath  = "ZooKeeperElectionPath"
+	ZooKeeperServers    = "ZooKeeperServers"
 )
