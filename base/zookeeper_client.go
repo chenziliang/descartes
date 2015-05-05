@@ -144,13 +144,67 @@ func (client *ZooKeeperClient) Close() {
 	client.conn.Close()
 }
 
-func (client *ZooKeeperClient) DeleteNode(node string) error {
+// DeleteNode deletes the latest version data on the node
+func (client *ZooKeeperClient) DeleteNode(node string, ignoreNotExists bool) error {
 	_, stat, err := client.conn.Get(node)
 	if err != nil {
+		if err == zk.ErrNoNode && ignoreNotExists {
+			return nil
+		}
 		glog.Errorf("Failed to get node=%s", node)
 		return err
 	}
 	return client.conn.Delete(node, stat.Version)
+}
+
+// Create stores a new value at node.
+func (client *ZooKeeperClient) CreateNode(node string, value []byte, ephemeral, ignoreExists bool) error {
+	if err := client.mkdirRecursive(path.Dir(node)); err != nil {
+		glog.Errorf("Failed to create node=%s", path.Dir(node))
+		return err
+	}
+
+	flags := int32(0)
+	if ephemeral {
+		flags = zk.FlagEphemeral
+	}
+	_, err := client.conn.Create(node, value, flags, zk.WorldACL(zk.PermAll))
+	if err == nil || (err == zk.ErrNodeExists && ignoreExists) {
+		return nil
+	}
+	glog.Errorf("Failed to create node=%s, error=%s", node, err)
+	return err
+}
+
+// GetNode returns the attached payload of the latest version on the node
+func (client *ZooKeeperClient) GetNode(node string, ignoreNotExists bool) ([]byte, error) {
+	data, _, err := client.conn.Get(node)
+	if err == nil || (err == zk.ErrNoNode && ignoreNotExists) {
+		return data, nil
+	}
+	glog.Errorf("Failed to get node=%s, error=%s", node, err)
+	return nil, err
+}
+
+// SetNode returns the attached payload on the node
+func (client *ZooKeeperClient) SetNode(node string, value []byte) error {
+	_, stat, err := client.conn.Get(node)
+	if err != nil {
+		glog.Errorf("Failed to get node=%s, error=%s", node, err)
+		return err
+	}
+
+	stat, err = client.conn.Set(node, value, stat.Version)
+	if err != nil {
+		glog.Errorf("Failed to set node=%s, error=%s", node, err)
+	}
+	return err
+}
+
+// NodeExists check if the node already exists
+func (client *ZooKeeperClient) NodeExists(node string) (bool, error) {
+	res, _, err := client.conn.Exists(node)
+	return res, err
 }
 
 // MkdirAll creates a directory recursively
@@ -170,27 +224,14 @@ func (client *ZooKeeperClient) mkdirRecursive(node string) error {
 	return err
 }
 
-// Create stores a new value at node. Fails if already set
-func (client *ZooKeeperClient) CreateNode(node string, value []byte, ephemeral, ignoreExists bool) error {
-	if err := client.mkdirRecursive(path.Dir(node)); err != nil {
-		glog.Errorf("Failed to create node=%s", path.Dir(node))
-		return err
-	}
-
-	flags := int32(0)
-	if ephemeral {
-		flags = zk.FlagEphemeral
-	}
-	_, err := client.conn.Create(node, value, flags, zk.WorldACL(zk.PermAll))
-	if err == nil || (err == zk.ErrNodeExists && ignoreExists) {
-		return nil
-	}
-	glog.Errorf("Failed to create node=%s, error=%s", node, err)
-	return err
+func (client *ZooKeeperClient) IsDisconnected() bool {
+	return client.conn.State() == zk.StateDisconnected
 }
 
-// NodeExists check if the node already exists
-func (client *ZooKeeperClient) NodeExists(node string) (bool, error) {
-	res, _, err := client.conn.Exists(node)
-	return res, err
+func (client *ZooKeeperClient) IsConnected() bool {
+	return client.conn.State() == zk.StateConnected
+}
+
+func (client *ZooKeeperClient) IsExpired() bool {
+	return client.conn.State() == zk.StateExpired
 }

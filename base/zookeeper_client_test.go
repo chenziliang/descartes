@@ -78,12 +78,62 @@ func TestZooKeeperClient(t *testing.T) {
 		t.Errorf("Failed to crete node, error=%s", err)
 	}
 
-	err = allParticipants[8].DeleteNode(HeartbeatRoot + "/" + "Kens-MacBook-Pro.local")
+	err = allParticipants[8].DeleteNode(HeartbeatRoot + "/" + "Kens-MacBook-Pro.local", false)
 	if err != nil {
 		t.Errorf("Failed to delete node, error=%s", err)
 	}
 
+	client := allParticipants[8]
+	data := []byte("0123456789")
+	node := "/testnode"
+	err = client.CreateNode(node, data, false, false)
+	if err != nil {
+		t.Errorf("Failed to create node, error=%s", err)
+	}
+
+	dataBack, err := client.GetNode(node, false)
+	if err != nil {
+		t.Errorf("Failed to get node, error=%s", err)
+	}
+
+	if string(data) != string(dataBack) {
+		t.Errorf("Failed to get node, expected=%s, got=%s", data, dataBack)
+	}
+
+	err = client.DeleteNode(node, false)
+	if err != nil {
+		t.Errorf("Failed to get node, error=%s", err)
+	}
+
+	data2 := []byte("9876543210")
+	err = client.CreateNode(node, data2, false, false)
+	data2Back, err := client.GetNode(node, false)
+	if err != nil {
+		t.Errorf("Failed to get node, error=%s", err)
+	}
+
+	if string(data2) != string(data2Back) {
+		t.Errorf("Failed to get node, expected=%s, got=%s", data2, data2Back)
+	}
+
+	err = client.DeleteNode(node, false)
+	if err != nil {
+		t.Errorf("Failed to delete node, error=%s", err)
+	}
+
+	_, err = client.GetNode(node, false)
+	if err == nil {
+		t.Errorf("Should error out")
+	}
+
 	time.Sleep(1 * time.Second)
+
+	for i := 0; i < 10; i++ {
+		if allParticipants[i].IsConnected() {
+			allParticipants[i].Close()
+		}
+	}
+
 	breakChan <- true
 	<-done
 }
