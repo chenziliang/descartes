@@ -9,7 +9,9 @@ import (
 	kafkareader "github.com/chenziliang/descartes/sources/kafka"
 	"github.com/golang/glog"
 	"math/rand"
+	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -18,15 +20,17 @@ import (
 type ScheduleService struct {
 	jobFactory     *JobFactory
 	jobScheduler   *base.Scheduler
-	client         *base.KafkaClient
+	kafkaClient       *base.KafkaClient
 	partitionMonitor  *KafkaMetaDataMonitor
-	brokerConfig   base.BaseConfig
+	config         base.BaseConfig
 	jobConfigs     map[string]base.BaseConfig            // job key indexed
 	jobs           map[string]base.Job                   // job key indexed
-	dispatchedJobs map[string][]string                   // job dispatched to which host
-	heartBeats     map[string]map[string]base.BaseConfig // ip, app => heartbeat
-	heartBeatMutex sync.Mutex
+	liveCollectors map[string]map[string]base.BaseConfig // ip, app => heartbeat
+	liveCollectorsMutex sync.Mutex
 	taskChan       chan base.BaseConfig
+	zkClient       *base.ZooKeeperClient
+	nodeGUID       string
+	isLeader       bool
 	started        int32
 }
 
@@ -34,26 +38,50 @@ const (
 	heartbeatThreadhold = 2 * int64(6 * time.Second)
 )
 
-func NewScheduleService(brokerConfig base.BaseConfig) *ScheduleService {
-	client := base.NewKafkaClient(brokerConfig, "TaskMonitorClient")
+// TODO, refactor out the ZooKeeper dependency ?
+// config contains: KafkaBrokers, ZooKeeperServers IPs
+func NewScheduleService(config base.BaseConfig) *ScheduleService {
+	client := base.NewKafkaClient(config, "TaskMonitorClient")
 	if client == nil {
 		return nil
+	}
+
+	zkClient := base.NewZooKeeperClient(config)
+	if zkClient == nil {
+		return nil
+	}
+
+	host, _ := os.Hostname()
+	guid, err := zkClient.JoinElection(host)
+	if err != nil {
+		return nil
+	}
+
+	isLeader, err := zkClient.IsLeader(guid)
+	if err != nil {
+		return nil
+	}
+
+	if isLeader {
+		glog.Warningf("Take the leader role of scheduler service")
 	}
 
 	ss := &ScheduleService{
 		jobFactory:     NewJobFactory(),
 		jobScheduler:   base.NewScheduler(),
-		client:         client,
-		brokerConfig:   brokerConfig,
+		kafkaClient:    client,
+		config:         config,
 		jobConfigs:     make(map[string]base.BaseConfig, 100),
 		jobs:           make(map[string]base.Job, 100),
-		dispatchedJobs: make(map[string][]string),
-		heartBeats:     make(map[string]map[string]base.BaseConfig, 100),
+		liveCollectors: make(map[string]map[string]base.BaseConfig, 100),
 		taskChan:       make(chan base.BaseConfig, 100),
+		zkClient:       zkClient,
+		nodeGUID:       guid,
+		isLeader:       isLeader,
 		started:        0,
 	}
-	ss.jobFactory.RegisterJobCreationHandler(base.TaskConfig, ss.createTaskDispatchJob)
-	ss.partitionMonitor = NewKafkaMetaDataMonitor(brokerConfig, ss)
+	ss.jobFactory.RegisterJobCreationHandler(base.TaskConfig, ss.createTaskPublishJob)
+	ss.partitionMonitor = NewKafkaMetaDataMonitor(config, ss)
 	return ss
 }
 
@@ -64,9 +92,10 @@ func (ss *ScheduleService) Start() {
 	}
 
 	ss.jobScheduler.Start()
+	go ss.monitorLeaderChanges()
 	go ss.monitorTasks()
-	go ss.monitorHeartBeats()
-	go ss.publishTask()
+	go ss.monitorCollectorHeartbeats()
+	go ss.doPublishTask()
 
 	glog.Infof("ScheduleService started...")
 }
@@ -80,11 +109,38 @@ func (ss *ScheduleService) Stop() {
 	ss.jobScheduler.Stop()
 	ss.partitionMonitor.Stop()
 	ss.jobFactory.CloseClients()
-	ss.client.Close()
+	ss.kafkaClient.Close()
+	ss.zkClient.Close()
 	glog.Infof("ScheduleService stopped...")
 }
 
-func (ss *ScheduleService) createTaskDispatchJob(config base.BaseConfig) base.Job {
+func (ss *ScheduleService) monitorLeaderChanges() {
+	watchChan, err := ss.zkClient.WatchElectionParticipants()
+	if err != nil {
+		panic("Failed to monitor leader changes")
+	}
+
+	for atomic.LoadInt32(&ss.started) != 0 {
+		select{
+		case <-watchChan:
+			// register the watch immediately
+			watch, err := ss.zkClient.WatchElectionParticipants()
+			if err == nil {
+				watchChan = watch
+			}
+			glog.Infof("Detect leader participants change")
+			isLeader, err := ss.zkClient.IsLeader(ss.nodeGUID)
+			if err == nil {
+				if ss.isLeader != isLeader {
+					glog.Warningf("Change the role from leader=%v to leader=%v", ss.isLeader, isLeader)
+				}
+				ss.isLeader = isLeader
+			}
+		}
+	}
+}
+
+func (ss *ScheduleService) createTaskPublishJob(config base.BaseConfig) base.Job {
 	interval, err := strconv.ParseInt(config[base.Interval], 10, 64)
 	if err != nil {
 		glog.Errorf("Failed to convert %s to integer, error=%s", config[base.Interval], err)
@@ -92,20 +148,20 @@ func (ss *ScheduleService) createTaskDispatchJob(config base.BaseConfig) base.Jo
 	}
 
 	interval = interval * int64(time.Second)
-	job := base.NewJob(ss.dispatchTaskToKafka, time.Now().UnixNano(), interval, config)
+	job := base.NewJob(ss.publishTaskToKafka, time.Now().UnixNano(), interval, config)
 	return job
 }
 
-func (ss *ScheduleService) dispatchTaskToKafka(params base.JobParam) error {
+func (ss *ScheduleService) publishTaskToKafka(params base.JobParam) error {
 	config := params.(base.BaseConfig)
 	ss.taskChan <- config
 	return nil
 }
 
-func (ss *ScheduleService) publishTask() {
+func (ss *ScheduleService) doPublishTask() {
 	// FIXME base.Key
 	brokerConfig := base.BaseConfig{
-		base.KafkaBrokers: ss.brokerConfig[base.KafkaBrokers],
+		base.KafkaBrokers: ss.config[base.KafkaBrokers],
 		base.KafkaTopic:   base.Tasks,
 		base.Key:          base.Tasks,
 	}
@@ -120,6 +176,11 @@ func (ss *ScheduleService) publishTask() {
 	for atomic.LoadInt32(&ss.started) != 0 {
 		select {
 		case taskConfig := <-ss.taskChan:
+			// Only leader should publish the tasks
+			if !ss.isLeader {
+				continue
+			}
+
 			rawData, err := json.Marshal(taskConfig)
 			if err != nil {
 				glog.Errorf("Failed to marshal task config, error=%s", err)
@@ -147,18 +208,26 @@ func (ss *ScheduleService) publishTask() {
 func (ss *ScheduleService) getAvailableGatheringHost(config base.BaseConfig) string {
 	// TODO locality
 	var availableHosts []string
-	ss.heartBeatMutex.Lock()
-	for host, appHeartBeat := range ss.heartBeats {
-		if heartBeat, ok := appHeartBeat[config[base.App]]; ok {
-			lasttime, _ := strconv.ParseInt(heartBeat[base.Timestamp], 10, 64)
-			if time.Now().UnixNano()-lasttime < heartbeatThreadhold {
+	ss.liveCollectorsMutex.Lock()
+	for host, apps := range ss.liveCollectors {
+	    if ss.config[base.Heartbeat] != "kafka" {
+			if _, ok := apps[config[base.App]]; ok {
 				availableHosts = append(availableHosts, host)
 			} else {
-				glog.Errorf("Host=%s, App=%s has lost the heartbeat", host, config[base.App])
+				glog.Warningf("Host=%s, App=%s has lost the heartbeat", host, config[base.App])
+			}
+		} else {
+			if heartbeat, ok := apps[config[base.App]]; ok {
+				lasttime, _ := strconv.ParseInt(heartbeat[base.Timestamp], 10, 64)
+				if time.Now().UnixNano()-lasttime < heartbeatThreadhold {
+					availableHosts = append(availableHosts, host)
+				} else {
+					glog.Warningf("Host=%s, App=%s has lost the heartbeat", host, config[base.App])
+				}
 			}
 		}
 	}
-	ss.heartBeatMutex.Unlock()
+	ss.liveCollectorsMutex.Unlock()
 
 	if len(availableHosts) > 0 {
 		r := rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -174,22 +243,19 @@ func (ss *ScheduleService) getAvailableGatheringHost(config base.BaseConfig) str
 func (ss *ScheduleService) doMonitor(topic string) {
 	checkpoint := base.NewNullCheckpointer()
 	writer := memory.NewMemoryDataWriter()
-	topicPartitions, err := ss.client.TopicPartitions(topic)
+	topicPartitions, err := ss.kafkaClient.TopicPartitions(topic)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to get partitions for topic=%s", topic))
 	}
 
 	for _, partition := range topicPartitions[topic] {
 		config := base.BaseConfig{
-			base.KafkaTopic:               topic,
-			base.KafkaPartition:           fmt.Sprintf("%d", partition),
-			base.CheckpointTopic:     topic + "ckpt",
-			base.CheckpointKey:       topic + "ckpt",
-			base.CheckpointPartition: "0",
-			base.UseOffsetNewest:     "1",
+			base.KafkaTopic:		topic,
+			base.KafkaPartition:    fmt.Sprintf("%d", partition),
+			base.UseOffsetNewest:   "1",
 		}
 
-		reader := kafkareader.NewKafkaDataReader(ss.client, config, writer, checkpoint)
+		reader := kafkareader.NewKafkaDataReader(ss.kafkaClient, config, writer, checkpoint)
 		if reader == nil {
 			panic("Failed to create kafka reader")
 		}
@@ -220,8 +286,65 @@ func (ss *ScheduleService) handleMonitorData(data *base.Data, topic string) {
 	}
 }
 
-func (ss *ScheduleService) monitorHeartBeats() {
-	ss.doMonitor(base.TaskStats)
+func (ss *ScheduleService) monitorCollectorHeartbeats() {
+	if ss.config[base.Heartbeat] != "kafka" {
+		ss.doMonitorThroughZooKeeper()
+	} else {
+		ss.doMonitor(base.TaskStats)
+	}
+}
+
+func (ss *ScheduleService) doMonitorThroughZooKeeper() {
+	ss.refreshRegisteredCollectors()
+	collectorChanges, err := ss.zkClient.ChildrenW(base.HeartbeatRoot)
+	if err != nil {
+		panic("Failed to monitor the collectors")
+	}
+
+	ticker := time.Tick(60 * time.Second)
+	lastFreshed := time.Now().UnixNano()
+	for atomic.LoadInt32(&ss.started) != 0 {
+		select {
+		case <-collectorChanges:
+			collectorChanges, err = ss.zkClient.ChildrenW(base.HeartbeatRoot)
+			if err != nil {
+				continue
+			}
+			glog.Infof("Detect collectors change")
+			ss.refreshRegisteredCollectors()
+			lastFreshed = time.Now().UnixNano()
+
+		case <-ticker:
+			if time.Now().UnixNano() - lastFreshed > int64(60 * time.Second) {
+				ss.refreshRegisteredCollectors()
+			    lastFreshed = time.Now().UnixNano()
+			}
+		}
+	}
+}
+
+func (ss *ScheduleService) refreshRegisteredCollectors() {
+	// First get all registered collectors
+	// base.HeartbeatRoot/<host>!<app>
+	newLivings := make(map[string]map[string]base.BaseConfig)
+	collectorHosts, err := ss.zkClient.Children(base.HeartbeatRoot)
+	if err == nil {
+		for _, hostCollector := range collectorHosts {
+			hostApp := strings.Split(hostCollector, "!")
+			if len(hostApp) != 2 {
+				glog.Errorf("Invalid host collector=%s, expect in <host>!<app> format", hostCollector)
+				continue
+			}
+			if newLivings[hostApp[0]] == nil {
+				newLivings[hostApp[0]] = make(map[string]base.BaseConfig)
+			}
+			newLivings[hostApp[0]][hostApp[1]] = nil
+		}
+	}
+
+	ss.liveCollectorsMutex.Lock()
+	ss.liveCollectors = newLivings
+	ss.liveCollectorsMutex.Unlock()
 }
 
 // data is a map and is expected to have the following keys
@@ -245,17 +368,17 @@ func (ss *ScheduleService) handleTaskStats(data *base.Data) {
 		// glog.Infof("Got heartbeat from host=%s, app=%s", heartBeat[base.Host], heartBeat[base.App])
 		heartBeat[base.Timestamp] = fmt.Sprintf("%d", time.Now().UnixNano())
 
-		ss.heartBeatMutex.Lock()
-		if ss.heartBeats[heartBeat[base.Host]] == nil {
-			ss.heartBeats[heartBeat[base.Host]] = make(map[string]base.BaseConfig)
+		ss.liveCollectorsMutex.Lock()
+		if ss.liveCollectors[heartBeat[base.Host]] == nil {
+			ss.liveCollectors[heartBeat[base.Host]] = make(map[string]base.BaseConfig)
 		}
-		ss.heartBeats[heartBeat[base.Host]][heartBeat[base.App]] = heartBeat
-		ss.heartBeatMutex.Unlock()
+		ss.liveCollectors[heartBeat[base.Host]][heartBeat[base.App]] = heartBeat
+		ss.liveCollectorsMutex.Unlock()
 	}
 }
 
 func (ss *ScheduleService) monitorTasks() {
-	<-time.After(time.Duration(heartbeatThreadhold))
+	// <-time.After(time.Duration(heartbeatThreadhold))
 	ss.partitionMonitor.Start()
 	ss.doMonitor(base.TaskConfig)
 }

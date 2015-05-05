@@ -1,10 +1,14 @@
 {
-    "kafka": {
-        "KafkaBrokers": "172.16.107.153:9092;172.16.107.153:9093;172.16.107.153:9094"
+    "Kafka": {
+        "KafkaBrokers": "172.16.107.153:9092;172.16.107.153:9093;172.16.107.153:9094",
+        "KafkaZooKeepers": "172.16.107.153:2181"
     },
-    "cassandra": {
+    "Cassandra": {
         "CassandraSeeds": "172.16.107.153:9042",
         "CassandraKeyspace": "descartes",
         "CheckpointTable": "task_ckpts"
+    },
+    "Zookeeper": {
+        "ZooKeeperServers": "172.16.107.153:2181"
     }
 }

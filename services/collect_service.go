@@ -16,8 +16,9 @@ import (
 
 type CollectService struct {
 	jobFactory     *JobFactory
-	brokerConfig   base.BaseConfig
+	config         base.BaseConfig
 	client         *base.KafkaClient
+	zkClient       *base.ZooKeeperClient
 	jobs           map[string]base.Job         // job key indexed
 	host           string
 	started        int32
@@ -27,9 +28,14 @@ const (
 	heartbeatInterval = 6 * time.Second
 )
 
-func NewCollectService(brokerConfig base.BaseConfig) *CollectService {
-	client := base.NewKafkaClient(brokerConfig, "TaskMonitorClient")
+func NewCollectService(config base.BaseConfig) *CollectService {
+	client := base.NewKafkaClient(config, "TaskMonitorClient")
 	if client == nil {
+		return nil
+	}
+
+	zkClient := base.NewZooKeeperClient(config)
+	if zkClient == nil {
 		return nil
 	}
 
@@ -39,48 +45,82 @@ func NewCollectService(brokerConfig base.BaseConfig) *CollectService {
 		return nil
 	}
 
+	// err = zkClient.CreateNode(base.HeartbeatRoot + "/" + host, nil, false, true)
+	//if err != nil {
+	//	return nil
+	//}
+
 	return &CollectService{
 		jobFactory:     NewJobFactory(),
 		client:         client,
-		brokerConfig:   brokerConfig,
+		zkClient:       zkClient,
+		config:			config,
 		jobs:           make(map[string]base.Job, 100),
 		host:           host,
 		started:        0,
 	}
 }
 
-func (ss *CollectService) Start() {
-	if !atomic.CompareAndSwapInt32(&ss.started, 0, 1) {
+func (cs *CollectService) Start() {
+	if !atomic.CompareAndSwapInt32(&cs.started, 0, 1) {
 		glog.Infof("CollectService already started.")
 		return
 	}
 
-	go ss.monitorTasks(base.Tasks)
-	go ss.doHeartBeats()
+	go cs.monitorTasks(base.Tasks)
+	go cs.doHeartbeats()
 
 	glog.Infof("CollectService started...")
 }
 
-func (ss *CollectService) Stop() {
-	if !atomic.CompareAndSwapInt32(&ss.started, 1, 0) {
+func (cs *CollectService) Stop() {
+	if !atomic.CompareAndSwapInt32(&cs.started, 1, 0) {
 		glog.Infof("CollectService already stopped.")
 		return
 	}
 
-	ss.jobFactory.CloseClients()
-	ss.client.Close()
+	cs.jobFactory.CloseClients()
+	cs.client.Close()
+	cs.zkClient.Close()
 
-	for _, job := range ss.jobs {
+	for _, job := range cs.jobs {
 		job.Stop()
 	}
 	glog.Infof("CollectService stopped...")
 }
 
-func (ss *CollectService) doHeartBeats() {
+func (cs *CollectService) doHeartbeats() {
+	if cs.config[base.Heartbeat] != "kafka" {
+		cs.doHeartbeatsThroughZooKeeper()
+	} else {
+		cs.doHeartBeatsThroughKafka()
+	}
+}
+
+func (cs *CollectService) doHeartbeatsThroughZooKeeper() {
+	// FIXME session expiration/network outage ?
+	stats := map[string]string {
+		base.Host: cs.host,
+		base.Platform: runtime.GOOS,
+		base.App: "",
+		base.CpuCount: fmt.Sprintf("%d", runtime.NumCPU()),
+		base.Timestamp: "",
+	}
+
+	stats[base.Timestamp] = fmt.Sprintf("%d", time.Now().UnixNano())
+	for _, app := range cs.jobFactory.Apps() {
+		stats[base.App] = app
+		rawData, _ := json.Marshal(stats)
+		node := base.HeartbeatRoot + "/" + cs.host + "!" + app
+		cs.zkClient.CreateNode(node, rawData, true, true)
+	}
+}
+
+func (cs *CollectService) doHeartBeatsThroughKafka() {
 	brokerConfig := base.BaseConfig{
-		base.KafkaBrokers:   ss.brokerConfig[base.KafkaBrokers],
+		base.KafkaBrokers:   cs.config[base.KafkaBrokers],
 		base.KafkaTopic:     base.TaskStats,
-		base.Key:       base.TaskStats,
+		base.Key:			 base.TaskStats,
 	}
 
 	writer := kafkawriter.NewKafkaDataWriter(brokerConfig)
@@ -91,7 +131,7 @@ func (ss *CollectService) doHeartBeats() {
 	defer writer.Stop()
 
 	stats := map[string]string {
-		base.Host: ss.host,
+		base.Host: cs.host,
 		base.Platform: runtime.GOOS,
 		base.App: "",
 		base.CpuCount: fmt.Sprintf("%d", runtime.NumCPU()),
@@ -99,14 +139,14 @@ func (ss *CollectService) doHeartBeats() {
 	}
 
 	ticker := time.Tick(heartbeatInterval)
-	for atomic.LoadInt32(&ss.started) != 0 {
+	for atomic.LoadInt32(&cs.started) != 0 {
 		select {
 		case <-ticker:
 			stats[base.Timestamp] = fmt.Sprintf("%d", time.Now().UnixNano())
-			for _, app := range ss.jobFactory.Apps() {
+			for _, app := range cs.jobFactory.Apps() {
 				stats[base.App] = app
 				rawData, _ := json.Marshal(stats)
-				// glog.Infof("Send heartbeat host=%s, app=%s", ss.host, app)
+				// glog.Infof("Send heartbeat host=%s, app=%s", cs.host, app)
 				data := &base.Data{
 					RawData:  [][]byte{rawData},
 				}
@@ -116,10 +156,10 @@ func (ss *CollectService) doHeartBeats() {
 	}
 }
 
-func (ss *CollectService) monitorTasks(topic string) {
+func (cs *CollectService) monitorTasks(topic string) {
 	checkpoint := base.NewNullCheckpointer()
 	writer := memory.NewMemoryDataWriter()
-	topicPartitions, err := ss.client.TopicPartitions(topic)
+	topicPartitions, err := cs.client.TopicPartitions(topic)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to get partitions for topic=%s", topic))
 	}
@@ -131,7 +171,7 @@ func (ss *CollectService) monitorTasks(topic string) {
 		    base.UseOffsetNewest:     "1",
 		}
 
-		reader := kafkareader.NewKafkaDataReader(ss.client, config, writer, checkpoint)
+		reader := kafkareader.NewKafkaDataReader(cs.client, config, writer, checkpoint)
 		if reader == nil {
 			panic("Failed to create kafka reader")
 		}
@@ -141,10 +181,10 @@ func (ss *CollectService) monitorTasks(topic string) {
 			defer r.Stop()
 			go r.IndexData()
 
-			for atomic.LoadInt32(&ss.started) != 0 {
+			for atomic.LoadInt32(&cs.started) != 0 {
 				select {
 				case data := <-writer.Data():
-					ss.handleTasks(data)
+					cs.handleTasks(data)
 				}
 			}
 		}(reader, writer)
@@ -153,7 +193,7 @@ func (ss *CollectService) monitorTasks(topic string) {
 
 
 // tasks are expected in map[string]string format
-func (ss *CollectService) handleTasks(data *base.Data) {
+func (cs *CollectService) handleTasks(data *base.Data) {
 	if _, ok := data.MetaInfo[base.Host]; !ok {
 		glog.Errorf("Host is missing in the task=%s", data)
 		return
@@ -172,21 +212,21 @@ func (ss *CollectService) handleTasks(data *base.Data) {
 			continue
 		}
 
-		if data.MetaInfo[base.Host] != ss.host {
+		if data.MetaInfo[base.Host] != cs.host {
 			return
 		}
 
-		if _, ok := ss.jobs[taskConfig[base.TaskConfigKey]]; ok {
+		if _, ok := cs.jobs[taskConfig[base.TaskConfigKey]]; ok {
 			glog.Infof("Use cached collector, app=%s", taskConfig[base.App])
 		} else {
-		    job := ss.jobFactory.CreateJob(taskConfig[base.App], taskConfig)
+		    job := cs.jobFactory.CreateJob(taskConfig[base.App], taskConfig)
 			if job == nil {
 				return
 			}
-			ss.jobs[taskConfig[base.TaskConfigKey]] = job
+			cs.jobs[taskConfig[base.TaskConfigKey]] = job
 			job.Start()
 		}
 		// glog.Infof("Handle task=%s", taskConfig)
-		go ss.jobs[taskConfig[base.TaskConfigKey]].Callback()
+		go cs.jobs[taskConfig[base.TaskConfigKey]].Callback()
 	}
 }

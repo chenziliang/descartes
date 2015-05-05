@@ -63,9 +63,10 @@ func setupSignalHandler() <-chan os.Signal {
 	return c
 }
 
-func handleDataCollection(brokerConfig base.BaseConfig) {
-	config := base.BaseConfig{
-		base.KafkaBrokers: brokerConfig[base.KafkaBrokers],
+func handleDataCollection(globalConfig base.BaseConfig) {
+	config := make(base.BaseConfig)
+	for k, v := range globalConfig {
+		config[k] = v
 	}
 
 	collect := services.NewCollectService(config)
@@ -81,13 +82,15 @@ func handleDataCollection(brokerConfig base.BaseConfig) {
 	collect.Stop()
 }
 
-func writeTaskConfigs(brokerConfig base.BaseConfig, snow_task_file, kafka_task_file string) {
-	config := base.BaseConfig{
-		base.KafkaBrokers: brokerConfig[base.KafkaBrokers],
-		base.CassandraSeeds: brokerConfig[base.CassandraSeeds],
-		base.KafkaTopic: base.TaskConfig,
-		base.Key: base.TaskConfig,
+func writeTaskConfigs(globalConfig base.BaseConfig, snow_task_file, kafka_task_file string) {
+	config := make(base.BaseConfig)
+	for k, v := range globalConfig {
+		config[k] = v
 	}
+
+	config[base.KafkaTopic] = base.TaskConfig
+    config[base.Key] = base.TaskConfig
+
 	configWriter := mgmt.NewTaskConfigWriter(config)
 	configWriter.Start()
 	defer configWriter.Stop()
@@ -107,10 +110,9 @@ func writeTaskConfigs(brokerConfig base.BaseConfig, snow_task_file, kafka_task_f
 		for _, task := range tasks {
 			task[base.KafkaTopic] = services.GenerateTopic(task[base.App],
 			                        task[base.ServerURL], task[base.Username])
-			task[base.KafkaBrokers] = brokerConfig[base.KafkaBrokers]
-			task[base.CassandraSeeds] = brokerConfig[base.CassandraSeeds]
-			task[base.CassandraKeyspace] = brokerConfig[base.CassandraKeyspace]
-			task[base.CheckpointTable] = brokerConfig[base.CheckpointTable]
+			for k, v := range globalConfig {
+				task[k] = v
+			}
 			task[base.TaskConfigAction] = base.TaskConfigNew
 			task[base.TaskConfigKey] = task[base.KafkaTopic] + "_" + task["Endpoint"]
 			allTasks = append(allTasks, task)
@@ -121,20 +123,24 @@ func writeTaskConfigs(brokerConfig base.BaseConfig, snow_task_file, kafka_task_f
 		for _, task := range tasks {
 			task[base.KafkaTopic] = services.GenerateTopic("snow",
 			                         task["SourceServerURL"], task["SourceUsername"])
+			for k, v := range globalConfig {
+				task[k] = v
+			}
 			task[base.TaskConfigAction] = base.TaskConfigNew
-			task[base.KafkaBrokers] = brokerConfig[base.KafkaBrokers]
-			task[base.CassandraSeeds] = brokerConfig[base.CassandraSeeds]
-			task[base.CassandraKeyspace] = brokerConfig[base.CassandraKeyspace]
-			task[base.CheckpointTable] = brokerConfig[base.CheckpointTable]
+			task[base.TaskConfigKey] = ""
 			allTasks = append(allTasks, task)
 		}
 	}
 	configWriter.Write(allTasks)
 }
 
+func handleScheduling(globalConfig base.BaseConfig) {
+	config := make(base.BaseConfig)
+	for k, v := range globalConfig {
+		config[k] = v
+	}
 
-func handleScheduling(brokerConfig base.BaseConfig) {
-	schedule := services.NewScheduleService(brokerConfig)
+	schedule := services.NewScheduleService(config)
 	if schedule == nil {
 		panic("Failed to create schedule service")
 	}
@@ -168,7 +174,7 @@ func main() {
 		handleScheduling(globalConfig)
 	} else if *role == "data_collector" {
 		handleDataCollection(globalConfig)
-	} else if *role == "generate_config" {
+	} else if *role == "mgmt" {
 	    writeTaskConfigs(globalConfig, *snow_task_file, *kafka_task_file)
 	} else {
 		flag.PrintDefaults()
