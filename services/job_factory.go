@@ -28,6 +28,24 @@ func GenerateTopic(app, serverURL, username string) string {
 	return strings.Join([]string{app, url, username}, "_")
 }
 
+func createCheckpointer(config base.BaseConfig) base.Checkpointer {
+	switch config[base.CheckpointMethod] {
+	case "zookeeper":
+		return base.NewZooKeeperCheckpointer(config)
+	case "cassandra":
+		return base.NewCassandraCheckpointer(config)
+	case "kafka":
+		client := base.NewKafkaClient(config, "")
+		if client == nil {
+			return nil
+		}
+		return base.NewKafkaCheckpointer(client)
+	case "localfile":
+		return base.NewFileCheckpointer()
+	}
+	return base.NewZooKeeperCheckpointer(config)
+}
+
 type ReaderJob struct {
 	*base.BaseJob
 	reader base.DataReader
@@ -110,9 +128,9 @@ func (factory *JobFactory) newSnowJob(config base.BaseConfig) base.Job {
 		return nil
 	}
 
-	keyParts := []string{encodeURL(config[base.ServerURL]), config[base.Username], config["Endpoint"]}
-	config[base.Key] = strings.Join(keyParts, "_")
-	checkpoint := base.NewCassandraCheckpointer(config)
+	keyParts := []string{"", encodeURL(config[base.ServerURL]), config[base.Username], config["Endpoint"]}
+	config[base.Key] = strings.Join(keyParts, "/")
+	checkpoint := createCheckpointer(config)
 	if checkpoint == nil {
 		return nil
 	}
@@ -148,9 +166,9 @@ func (factory *JobFactory) newKafkaJob(config base.BaseConfig) base.Job {
 		return nil
 	}
 
-	keyParts := []string{config[base.KafkaTopic], config[base.KafkaPartition]}
-	config[base.Key] = strings.Join(keyParts, "_")
-	checkpoint := base.NewCassandraCheckpointer(config)
+	keyParts := []string{"", config[base.KafkaTopic], config[base.KafkaPartition]}
+	config[base.Key] = strings.Join(keyParts, "/")
+	checkpoint := createCheckpointer(config)
 	if checkpoint == nil {
 		return nil
 	}

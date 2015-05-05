@@ -4,6 +4,7 @@ const (
 	App                    = "App"
 	CassandraKeyspace      = "CassandraKeyspace"
 	CassandraSeeds         = "CassandraSeeds"
+	CheckpointMethod       = "CheckpointMethod"
 	CheckpointDir          = "CheckpointDir"
 	CheckpointKey          = "CheckpointKey"
 	CheckpointNamespace    = "CheckpointNamespace"

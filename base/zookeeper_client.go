@@ -1,6 +1,7 @@
 package base
 
 import (
+	"errors"
 	"fmt"
 	"github.com/golang/glog"
 	"github.com/samuel/go-zookeeper/zk"
@@ -22,6 +23,7 @@ type ZooKeeperClient struct {
 }
 
 func NewZooKeeperClient(serverConfig BaseConfig) *ZooKeeperClient {
+	glog.Errorf("%v", serverConfig)
 	if servers, ok := serverConfig[ZooKeeperServers]; !ok || servers == "" {
 		glog.Errorf("Missing ZooKeeper server configuration")
 		return nil
@@ -159,6 +161,11 @@ func (client *ZooKeeperClient) DeleteNode(node string, ignoreNotExists bool) err
 
 // Create stores a new value at node.
 func (client *ZooKeeperClient) CreateNode(node string, value []byte, ephemeral, ignoreExists bool) error {
+	if !strings.HasPrefix(node, "/") {
+		glog.Errorf("Invalid node=%s, should begin with /", node)
+		return errors.New("Invalid node")
+	}
+
 	if err := client.mkdirRecursive(path.Dir(node)); err != nil {
 		glog.Errorf("Failed to create node=%s", path.Dir(node))
 		return err
