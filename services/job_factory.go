@@ -49,6 +49,7 @@ func createCheckpointer(config base.BaseConfig) base.Checkpointer {
 type ReaderJob struct {
 	*base.BaseJob
 	reader base.DataReader
+	zkClient *base.ZooKeeperClient
 }
 
 func (job *ReaderJob) call(params base.JobParam) error {
@@ -62,6 +63,9 @@ func (job *ReaderJob) Start() {
 
 func (job *ReaderJob) Stop() {
 	job.reader.Stop()
+	if job.zkClient != nil {
+		job.zkClient.Close()
+	}
 }
 
 type JobCreationHandler func(config base.BaseConfig) base.Job
@@ -122,8 +126,12 @@ func (factory *JobFactory) CloseClients() {
 }
 
 func (factory *JobFactory) newSnowJob(config base.BaseConfig) base.Job {
-	config[base.Key] = config[base.KafkaTopic]
-	writer := kafkawriter.NewKafkaDataWriter(config)
+	newConfig := make(base.BaseConfig, len(config))
+	for k, v := range config {
+		newConfig[k] = v
+	}
+
+	writer := kafkawriter.NewKafkaDataWriter(newConfig)
 	if writer == nil {
 		return nil
 	}
@@ -155,7 +163,37 @@ func (factory *JobFactory) newSnowJob(config base.BaseConfig) base.Job {
 	return job
 }
 
-func (factory *JobFactory) newKafkaJob(config base.BaseConfig) base.Job {
+func (factory *JobFactory) newKafkaJob(config base.BaseConfig) (res base.Job) {
+	var zkClient *base.ZooKeeperClient
+	if config[base.LongRun] != "" {
+		zkClient = base.NewZooKeeperClient(config)
+		if zkClient == nil {
+			return nil
+		}
+
+		defer func () {
+			if res == nil {
+				zkClient.Close()
+			}
+		}()
+
+		node := base.LongRunTaskRoot + "/" + config[base.TaskConfigKey]
+		exists, err := zkClient.NodeExists(node)
+		if err != nil {
+			return nil
+		}
+
+		if exists  {
+			glog.Infof("Long running task=%s is not done", config[base.TaskConfigKey])
+			return nil
+		}
+
+		err = zkClient.CreateNode(node, nil, true, false)
+		if err != nil {
+			return nil
+		}
+	}
+
 	client := factory.getKafkaClient(config)
 	if client == nil {
 		return nil
@@ -179,8 +217,9 @@ func (factory *JobFactory) newKafkaJob(config base.BaseConfig) base.Job {
 	}
 
 	job := &ReaderJob{
-		BaseJob: base.NewJob(nil, time.Now().UnixNano(), int64(time.Hour*24*365), config),
+		BaseJob: base.NewJob(nil, time.Now().UnixNano(), int64(15 * time.Second), config),
 		reader:  reader,
+		zkClient: zkClient,
 	}
 
 	job.ResetFunc(job.call)

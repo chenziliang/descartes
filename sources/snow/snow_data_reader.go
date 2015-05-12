@@ -115,7 +115,6 @@ func (snow *SnowDataReader) ReadData() ([]byte, error) {
 	}
 	defer atomic.StoreInt32(&snow.collecting, 0)
 
-	// glog.Infof(snow.getURL())
 	req, err := http.NewRequest("GET", snow.getURL(), nil)
 	if err != nil {
 		glog.Errorf("Failed to create request, error=%s", err)
@@ -128,14 +127,14 @@ func (snow *SnowDataReader) ReadData() ([]byte, error) {
 
 	resp, err := snow.http_client.Do(req)
 	if err != nil {
-		glog.Errorf("Failed to do request, error=%s", err)
+		glog.Errorf("Failed to do request for %s, error=%s", snow.getURL(), err)
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	reader, err := gzip.NewReader(resp.Body)
 	if err != nil {
-		glog.Errorf("Failed to create gzip reader, error=%s", err)
+		glog.Errorf("Failed to create gzip reader for %s, error=%s", snow.getURL(), err)
 		return nil, err
 	}
 	defer reader.Close()

@@ -17,7 +17,7 @@ import (
 type CollectService struct {
 	jobFactory     *JobFactory
 	config         base.BaseConfig
-	client         *base.KafkaClient
+	kafkaClient    *base.KafkaClient
 	zkClient       *base.ZooKeeperClient
 	jobs           map[string]base.Job         // job key indexed
 	host           string
@@ -25,7 +25,7 @@ type CollectService struct {
 }
 
 const (
-	heartbeatInterval = 6 * time.Second
+	heartbeatInterval = 30 * time.Second
 )
 
 func NewCollectService(config base.BaseConfig) *CollectService {
@@ -45,14 +45,9 @@ func NewCollectService(config base.BaseConfig) *CollectService {
 		return nil
 	}
 
-	// err = zkClient.CreateNode(base.HeartbeatRoot + "/" + host, nil, false, true)
-	//if err != nil {
-	//	return nil
-	//}
-
 	return &CollectService{
 		jobFactory:     NewJobFactory(),
-		client:         client,
+		kafkaClient:    client,
 		zkClient:       zkClient,
 		config:			config,
 		jobs:           make(map[string]base.Job, 100),
@@ -68,7 +63,8 @@ func (cs *CollectService) Start() {
 	}
 
 	go cs.monitorTasks(base.Tasks)
-	go cs.doHeartbeats()
+	go cs.doHeartbeatsThroughKafka()
+	go cs.doHeartbeatsThroughZooKeeper()
 
 	glog.Infof("CollectService started...")
 }
@@ -80,7 +76,7 @@ func (cs *CollectService) Stop() {
 	}
 
 	cs.jobFactory.CloseClients()
-	cs.client.Close()
+	cs.kafkaClient.Close()
 	cs.zkClient.Close()
 
 	for _, job := range cs.jobs {
@@ -89,47 +85,15 @@ func (cs *CollectService) Stop() {
 	glog.Infof("CollectService stopped...")
 }
 
-func (cs *CollectService) doHeartbeats() {
+func (cs *CollectService) sendHeartbeats() {
 	if cs.config[base.Heartbeat] != "kafka" {
 		cs.doHeartbeatsThroughZooKeeper()
 	} else {
-		cs.doHeartBeatsThroughKafka()
+		cs.doHeartbeatsThroughKafka()
 	}
 }
 
-func (cs *CollectService) doHeartbeatsThroughZooKeeper() {
-	// FIXME session expiration/network outage ?
-	stats := map[string]string {
-		base.Host: cs.host,
-		base.Platform: runtime.GOOS,
-		base.App: "",
-		base.CpuCount: fmt.Sprintf("%d", runtime.NumCPU()),
-		base.Timestamp: "",
-	}
-
-	stats[base.Timestamp] = fmt.Sprintf("%d", time.Now().UnixNano())
-	for _, app := range cs.jobFactory.Apps() {
-		stats[base.App] = app
-		rawData, _ := json.Marshal(stats)
-		node := base.HeartbeatRoot + "/" + cs.host + "!" + app
-		cs.zkClient.CreateNode(node, rawData, true, true)
-	}
-}
-
-func (cs *CollectService) doHeartBeatsThroughKafka() {
-	brokerConfig := base.BaseConfig{
-		base.KafkaBrokers:   cs.config[base.KafkaBrokers],
-		base.KafkaTopic:     base.TaskStats,
-		base.Key:			 base.TaskStats,
-	}
-
-	writer := kafkawriter.NewKafkaDataWriter(brokerConfig)
-	if writer == nil {
-		panic("Failed to create kafka writer")
-	}
-	writer.Start()
-	defer writer.Stop()
-
+func (cs *CollectService) doHeartbeats(f func(app string, d *base.Data)) {
 	stats := map[string]string {
 		base.Host: cs.host,
 		base.Platform: runtime.GOOS,
@@ -150,28 +114,61 @@ func (cs *CollectService) doHeartBeatsThroughKafka() {
 				data := &base.Data{
 					RawData:  [][]byte{rawData},
 				}
-				writer.WriteData(data)
+				f(app, data)
 			}
 		}
 	}
 }
 
+func (cs *CollectService) doHeartbeatsThroughZooKeeper() {
+	// FIXME session expiration/network outage ?
+	for _, app := range cs.jobFactory.Apps() {
+		node := base.HeartbeatRoot + "/" + cs.host + "!" + app
+		cs.zkClient.CreateNode(node, nil, true, true)
+	}
+
+	f := func(app string, data *base.Data) {
+		node := base.HeartbeatRoot + "/" + cs.host + "!" + app
+		cs.zkClient.SetNode(node, data.RawData[0])
+	}
+	cs.doHeartbeats(f)
+}
+
+func (cs *CollectService) doHeartbeatsThroughKafka() {
+	brokerConfig := base.BaseConfig{
+		base.KafkaBrokers:   cs.config[base.KafkaBrokers],
+		base.KafkaTopic:     base.TaskStats,
+	}
+
+	writer := kafkawriter.NewKafkaDataWriter(brokerConfig)
+	if writer == nil {
+		panic("Failed to create kafka writer")
+	}
+	writer.Start()
+	defer writer.Stop()
+
+	f := func(app string, data *base.Data) {
+		writer.WriteData(data)
+	}
+	cs.doHeartbeats(f)
+}
+
 func (cs *CollectService) monitorTasks(topic string) {
 	checkpoint := base.NewNullCheckpointer()
 	writer := memory.NewMemoryDataWriter()
-	topicPartitions, err := cs.client.TopicPartitions(topic)
+	topicPartitions, err := cs.kafkaClient.TopicPartitions(topic)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to get partitions for topic=%s", topic))
 	}
 
 	for _, partition := range topicPartitions[topic] {
 		config := base.BaseConfig{
-			base.KafkaTopic:               topic,
-			base.KafkaPartition:           fmt.Sprintf("%d", partition),
-		    base.UseOffsetNewest:     "1",
+			base.KafkaTopic:        topic,
+			base.KafkaPartition:    fmt.Sprintf("%d", partition),
+		    base.UseOffsetNewest:   "1",
 		}
 
-		reader := kafkareader.NewKafkaDataReader(cs.client, config, writer, checkpoint)
+		reader := kafkareader.NewKafkaDataReader(cs.kafkaClient, config, writer, checkpoint)
 		if reader == nil {
 			panic("Failed to create kafka reader")
 		}
@@ -190,7 +187,6 @@ func (cs *CollectService) monitorTasks(topic string) {
 		}(reader, writer)
 	}
 }
-
 
 // tasks are expected in map[string]string format
 func (cs *CollectService) handleTasks(data *base.Data) {
@@ -216,17 +212,25 @@ func (cs *CollectService) handleTasks(data *base.Data) {
 			return
 		}
 
-		if _, ok := cs.jobs[taskConfig[base.TaskConfigKey]]; ok {
+		// FIXME
+		var job base.Job
+		if taskConfig[base.App] == base.KafkaApp {
+			taskConfig[base.LongRun] = "1"
+		} else if j, ok := cs.jobs[taskConfig[base.TaskConfigKey]]; ok {
+			job = j
 			glog.Infof("Use cached collector, app=%s", taskConfig[base.App])
-		} else {
-		    job := cs.jobFactory.CreateJob(taskConfig[base.App], taskConfig)
+		}
+
+		if job == nil {
+			job = cs.jobFactory.CreateJob(taskConfig[base.App], taskConfig)
 			if job == nil {
 				return
 			}
+		    glog.Errorf("%s", taskConfig)
 			cs.jobs[taskConfig[base.TaskConfigKey]] = job
 			job.Start()
 		}
-		// glog.Infof("Handle task=%s", taskConfig)
+
 		go cs.jobs[taskConfig[base.TaskConfigKey]].Callback()
 	}
 }

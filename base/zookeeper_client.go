@@ -12,9 +12,10 @@ import (
 )
 
 const (
-	Root          = "/descartes"
-	ElectionRoot  = Root + "/election"
-	HeartbeatRoot = Root + "/heartbeat"
+	Root            = "/descartes"
+	ElectionRoot    = Root + "/election"
+	HeartbeatRoot   = Root + "/heartbeat"
+	LongRunTaskRoot = Root + "/long_run_tasks"
 )
 
 type ZooKeeperClient struct {
@@ -23,7 +24,6 @@ type ZooKeeperClient struct {
 }
 
 func NewZooKeeperClient(serverConfig BaseConfig) *ZooKeeperClient {
-	glog.Errorf("%v", serverConfig)
 	if servers, ok := serverConfig[ZooKeeperServers]; !ok || servers == "" {
 		glog.Errorf("Missing ZooKeeper server configuration")
 		return nil
@@ -39,6 +39,10 @@ func NewZooKeeperClient(serverConfig BaseConfig) *ZooKeeperClient {
 
 	if serverConfig[ZooKeeperHeartbeatRoot] == "" {
 		serverConfig[ZooKeeperHeartbeatRoot] = HeartbeatRoot
+	}
+
+	if serverConfig[ZooKeeperLongRunTask] == "" {
+		serverConfig[ZooKeeperLongRunTask] = LongRunTaskRoot
 	}
 
 	servers := strings.Split(serverConfig[ZooKeeperServers], ";")
@@ -175,6 +179,7 @@ func (client *ZooKeeperClient) CreateNode(node string, value []byte, ephemeral, 
 	if ephemeral {
 		flags = zk.FlagEphemeral
 	}
+
 	_, err := client.conn.Create(node, value, flags, zk.WorldACL(zk.PermAll))
 	if err == nil || (err == zk.ErrNodeExists && ignoreExists) {
 		return nil
@@ -193,7 +198,7 @@ func (client *ZooKeeperClient) GetNode(node string, ignoreNotExists bool) ([]byt
 	return nil, err
 }
 
-// SetNode returns the attached payload on the node
+// SetNode sets the payload on the node
 func (client *ZooKeeperClient) SetNode(node string, value []byte) error {
 	_, stat, err := client.conn.Get(node)
 	if err != nil {

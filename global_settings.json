@@ -12,6 +12,11 @@
         "ZooKeeperServers": "172.16.107.153:2181"
     },
     "GlobalSettings": {
-        "CheckpointMethod": "zookeeper"
+        "CheckpointMethod": "cassandra"
+    },
+    "Splunk": {
+        "SplunkURL": "https://localhost:8089",
+        "Username": "admin",
+        "Password": "admin"
     }
 }

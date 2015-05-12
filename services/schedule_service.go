@@ -22,6 +22,7 @@ type ScheduleService struct {
 	jobScheduler   *base.Scheduler
 	kafkaClient       *base.KafkaClient
 	partitionMonitor  *KafkaMetaDataMonitor
+	statsService      *StatsService
 	config         base.BaseConfig
 	jobConfigs     map[string]base.BaseConfig            // job key indexed
 	jobs           map[string]base.Job                   // job key indexed
@@ -66,10 +67,16 @@ func NewScheduleService(config base.BaseConfig) *ScheduleService {
 		glog.Warningf("Take the leader role of scheduler service")
 	}
 
+	statsService := NewStatsService(config)
+	if statsService == nil {
+		return nil
+
+	}
 	ss := &ScheduleService{
 		jobFactory:     NewJobFactory(),
 		jobScheduler:   base.NewScheduler(),
 		kafkaClient:    client,
+		statsService:   statsService,
 		config:         config,
 		jobConfigs:     make(map[string]base.BaseConfig, 100),
 		jobs:           make(map[string]base.Job, 100),
@@ -92,6 +99,7 @@ func (ss *ScheduleService) Start() {
 	}
 
 	ss.jobScheduler.Start()
+	ss.statsService.Start()
 	go ss.monitorLeaderChanges()
 	go ss.monitorTasks()
 	go ss.monitorCollectorHeartbeats()
@@ -107,6 +115,7 @@ func (ss *ScheduleService) Stop() {
 	}
 
 	ss.jobScheduler.Stop()
+	ss.statsService.Stop()
 	ss.partitionMonitor.Stop()
 	ss.jobFactory.CloseClients()
 	ss.kafkaClient.Close()
@@ -176,8 +185,7 @@ func (ss *ScheduleService) doPublishTask() {
 	for atomic.LoadInt32(&ss.started) != 0 {
 		select {
 		case taskConfig := <-ss.taskChan:
-			// Only leader should publish the tasks
-			if !ss.isLeader {
+	        if !ss.isLeader {
 				continue
 			}
 
@@ -192,6 +200,7 @@ func (ss *ScheduleService) doPublishTask() {
 				continue
 			}
 
+			glog.Infof("%s job=%s", taskConfig[base.App], taskConfig[base.TaskConfigKey])
 			meta := base.BaseConfig{
 				base.Host: host,
 			}

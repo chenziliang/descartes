@@ -23,13 +23,25 @@ type KafkaMetaDataMonitor struct {
 func NewKafkaMetaDataMonitor(config base.BaseConfig, ss *ScheduleService) *KafkaMetaDataMonitor {
 	client := base.NewKafkaClient(config, "MonitorClient")
 
-	return &KafkaMetaDataMonitor{
+	monitor := &KafkaMetaDataMonitor{
 		ss:                  ss,
 		client:              client,
 		topicPartitions:     make(map[string]map[int32]bool, 10),
 		topicConfigs:		 make(map[string]base.BaseConfig, 10),
 		configChan:		     make(chan base.BaseConfig, 10),
 	}
+
+    topicConfig := base.BaseConfig{}
+
+	for k, v := range config {
+		topicConfig[k] = v
+	}
+	topicConfig[base.KafkaTopic] = base.TaskStats
+	topicConfig[base.App] = base.KafkaApp
+	topicConfig[base.Interval] = "15"
+	topicConfig[base.ServerURL] = config["SplunkURL"]
+	monitor.AddTopicConfig(topicConfig)
+	return monitor
 }
 
 func (mon *KafkaMetaDataMonitor) Start() {

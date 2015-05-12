@@ -6,7 +6,7 @@ import (
 )
 
 type ZooKeeperCheckpointer struct {
-	config BaseConfig
+	config   BaseConfig
 	zkClient *ZooKeeperClient
 }
 
@@ -17,7 +17,7 @@ func NewZooKeeperCheckpointer(config BaseConfig) *ZooKeeperCheckpointer {
 	}
 
 	return &ZooKeeperCheckpointer{
-		config:  config,
+		config:   config,
 		zkClient: client,
 	}
 }

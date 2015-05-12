@@ -36,6 +36,10 @@ func NewKafkaDataWriter(brokerConfig base.BaseConfig) base.DataWriter {
 		}
 	}
 
+	if brokerConfig[base.Key] == "" {
+		brokerConfig[base.Key] = brokerConfig[base.KafkaTopic]
+	}
+
 	config := sarama.NewConfig()
 	config.Producer.RequiredAcks = sarama.WaitForLocal
 	config.Producer.Flush.Frequency = 500 * time.Millisecond

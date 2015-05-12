@@ -78,7 +78,7 @@ func TestZooKeeperClient(t *testing.T) {
 		t.Errorf("Failed to crete node, error=%s", err)
 	}
 
-	err = allParticipants[8].DeleteNode(HeartbeatRoot + "/" + "Kens-MacBook-Pro.local", false)
+	err = allParticipants[8].DeleteNode(HeartbeatRoot+"/"+"Kens-MacBook-Pro.local", false)
 	if err != nil {
 		t.Errorf("Failed to delete node, error=%s", err)
 	}

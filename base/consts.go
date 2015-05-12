@@ -25,6 +25,7 @@ const (
 	KafkaTopic             = "KafkaTopic"
 	KafkaZooKeepers        = "KafkaZooKeepers"
 	Key                    = "Key"
+	LongRun                = "LongRun"
 	MemAlloc               = "MemAlloc"
 	Password               = "Password"
 	Platform               = "Platform"
@@ -43,7 +44,7 @@ const (
 	TaskConfigKey          = "TaskConfigKey"
 	TaskConfigNew          = "TaskConfigNew"
 	TaskConfigUpdate       = "TaskConfigUpdate"
-	TaskStats              = "_TaskStats_"
+	TaskStats              = "TaskStats"
 	Taskname               = "Taskname"
 	Tasks                  = "_Tasks_"
 	Timestamp              = "Timestamp"
@@ -54,5 +55,6 @@ const (
 	ZooKeeperRoot          = "ZooKeeperRoot"
 	ZooKeeperElectionRoot  = "ZooKeeperElectionRoot"
 	ZooKeeperHeartbeatRoot = "ZooKeeperHeartbeatRoot"
+	ZooKeeperLongRunTask   = "ZooKeeperLongRunTask"
 	ZooKeeperServers       = "ZooKeeperServers"
 )
