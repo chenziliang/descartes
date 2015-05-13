@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/chenziliang/descartes/base"
 	"github.com/golang/glog"
+	"os"
 	kafkawriter "github.com/chenziliang/descartes/sinks/kafka"
 	"sync/atomic"
 	"time"
@@ -60,11 +61,12 @@ func (ss *StatsService) dumpCurrentTopics() {
 	writer.Start()
 	defer writer.Stop()
 
+	hostname, _ := os.Hostname()
+
 	metaInfo := base.BaseConfig{
-		base.ServerURL: ss.config["SplunkURL"],
-		base.Index: "main",
-		base.Source: "descartes",
-		base.Sourcetype: "kafka:topic:partition",
+		base.ServerURL: hostname,
+		base.App: base.KafkaApp,
+		base.Metric: "topic:partition",
 	}
 
 	ticker := time.Tick(dumpInterval)
@@ -76,15 +78,16 @@ func (ss *StatsService) dumpCurrentTopics() {
 				continue
 			}
 
-			var allData [][]byte
+			// FIXME in batch
+			data := &base.Data{MetaInfo: metaInfo}
 			for topic, partitions := range topicPartitions {
 				for _, partition := range partitions {
 					evt := fmt.Sprintf("topic=%s,partition=%d", topic, partition)
-					allData = append(allData, []byte(evt))
+					data.RawData = [][]byte{[]byte(evt)}
+			        writer.WriteData(data)
 				}
 			}
-			data := &base.Data{MetaInfo: metaInfo, RawData: allData}
-			writer.WriteData(data)
+			// writer.WriteData(data)
 		}
 	}
 }

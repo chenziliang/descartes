@@ -136,7 +136,7 @@ func (factory *JobFactory) newSnowJob(config base.BaseConfig) base.Job {
 		return nil
 	}
 
-	keyParts := []string{"", encodeURL(config[base.ServerURL]), config[base.Username], config["Endpoint"]}
+	keyParts := []string{"", encodeURL(config[base.ServerURL]), config[base.Username], config[base.Metric]}
 	config[base.Key] = strings.Join(keyParts, "/")
 	checkpoint := createCheckpointer(config)
 	if checkpoint == nil {
@@ -199,7 +199,7 @@ func (factory *JobFactory) newKafkaJob(config base.BaseConfig) (res base.Job) {
 		return nil
 	}
 
-	writer := splunk.NewSplunkDataWriter(config)
+	writer := factory.getDataWriter(config)
 	if writer == nil {
 		return nil
 	}
@@ -224,6 +224,17 @@ func (factory *JobFactory) newKafkaJob(config base.BaseConfig) (res base.Job) {
 
 	job.ResetFunc(job.call)
 	return job
+}
+
+func (factory *JobFactory) getDataWriter(config base.BaseConfig) base.DataWriter {
+	switch config[base.TargetSystemType] {
+	case base.Splunk:
+		return splunk.NewSplunkDataWriter(config)
+	case base.AWSS3:
+		// FIXME
+		return nil
+	}
+	return nil
 }
 
 func (factory *JobFactory) RegisterJobCreationHandler(app string, newFunc JobCreationHandler) {

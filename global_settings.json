@@ -14,9 +14,11 @@
     "GlobalSettings": {
         "CheckpointMethod": "cassandra"
     },
-    "Splunk": {
-        "SplunkURL": "https://localhost:8089",
+    "Monitor": {
+        "TargetSystem": "https://localhost:8089",
+        "TargetSystemType": "Splunk",
         "Username": "admin",
-        "Password": "admin"
+        "Password": "admin",
+        "Index": "main"
     }
 }

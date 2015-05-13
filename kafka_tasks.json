@@ -1,7 +1,7 @@
 {
     "kafka": [
         {
-            "ServerURL": "https://localhost:8089",
+            "ServerURL": "https://172.31.1.254:8089;https://172.31.1.255:8089",
             "Username": "admin",
             "Password": "admin",
             "Index": "main",
@@ -9,10 +9,11 @@
             "SourceServerURL": "https://ven01034.service-now.com",
             "SourceUsername": "admin",
             "App":"kafka",
-            "Interval": "600"
+            "TargetSystemType": "Splunk",
+            "Interval": "15"
         },
         {
-            "ServerURL": "https://localhost:8089",
+            "ServerURL": "https://172.31.1.254:8089;https://172.31.1.255:8089",
             "Username": "admin",
             "Password": "admin",
             "Index": "main",
@@ -20,10 +21,11 @@
             "SourceServerURL": "https://dev167.service-now.com",
             "SourceUsername": "admin",
             "App":"kafka",
-            "Interval": "600"
+            "TargetSystemType": "Splunk",
+            "Interval": "15"
         },
         {
-            "ServerURL": "https://localhost:8089",
+            "ServerURL": "https://172.31.1.254:8089;https://172.31.1.255:8089",
             "Username": "admin",
             "Password": "admin",
             "Index": "main",
@@ -31,10 +33,11 @@
             "SourceServerURL": "https://dev166.service-now.com",
             "SourceUsername": "admin",
             "App":"kafka",
-            "Interval": "600"
+            "TargetSystemType": "Splunk",
+            "Interval": "15"
         },
         {
-            "ServerURL": "https://localhost:8089",
+            "ServerURL": "https://172.31.1.254:8089;https://172.31.1.255:8089",
             "Username": "admin",
             "Password": "admin",
             "Index": "main",
@@ -42,7 +45,8 @@
             "SourceServerURL": "https://dev149.service-now.com",
             "SourceUsername": "admin",
             "App":"kafka",
-            "Interval": "600"
+            "TargetSystemType": "Splunk",
+            "Interval": "15"
         }
     ]
 }

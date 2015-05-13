@@ -2,6 +2,7 @@ package base
 
 const (
 	App                    = "App"
+	Broadcast              = "Broadcast"
 	CassandraKeyspace      = "CassandraKeyspace"
 	CassandraSeeds         = "CassandraSeeds"
 	CheckpointMethod       = "CheckpointMethod"
@@ -27,6 +28,7 @@ const (
 	Key                    = "Key"
 	LongRun                = "LongRun"
 	MemAlloc               = "MemAlloc"
+	Metric                 = "Metric"
 	Password               = "Password"
 	Platform               = "Platform"
 	ProxyPassword          = "ProxyPassword"
@@ -36,6 +38,8 @@ const (
 	ServerURL              = "ServerURL"
 	Source                 = "Source"
 	Sourcetype             = "Sourcetype"
+	Splunk                 = "Splunk"
+	AWSS3                  = "AWSS3"
 	SyncWrite              = "SyncWrite"
 	SysMemAlloc            = "SysMemAlloc"
 	TaskConfig             = "_TaskConfigs_"
@@ -47,6 +51,8 @@ const (
 	TaskStats              = "TaskStats"
 	Taskname               = "Taskname"
 	Tasks                  = "_Tasks_"
+	TargetSystem           = "TargetSystem"
+	TargetSystemType       = "TargetSystemType"
 	Timestamp              = "Timestamp"
 	TotoalMemAlloc         = "TotalMemAlloc"
 	UseOffsetNewest        = "UseOffsetNewest"

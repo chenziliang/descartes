@@ -85,10 +85,11 @@ func (writer *SplunkDataWriter) WriteDataSync(data *base.Data) error {
 
 func (writer *SplunkDataWriter) doWriteData(data *base.Data) error {
 	metaProps := url.Values{}
+	source, sourcetype := SourceAndSourcetype(data.MetaInfo)
 	metaProps.Add("host", data.MetaInfo[base.ServerURL])
 	metaProps.Add("index", writer.splunkdConfig[base.Index])
-	metaProps.Add("source", writer.splunkdConfig[base.Source])
-	metaProps.Add("sourcetype", "snow:"+data.MetaInfo["Endpoint"])
+	metaProps.Add("source", source)
+	metaProps.Add("sourcetype", sourcetype)
 
 	// FIXME perf issue for bytes concatenation
 	allData := make([]byte, 0, 4096)

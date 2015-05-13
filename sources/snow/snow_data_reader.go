@@ -33,7 +33,6 @@ type SnowDataReader struct {
 }
 
 const (
-	endpointKey       = "Endpoint"
 	timestampFieldKey = "TimestampField"
 	nextRecordTimeKey = "NextRecordTime"
 	recordCountKey    = "RecordCount"
@@ -41,12 +40,12 @@ const (
 )
 
 // NewSnowDataReader
-// @config: shall contain snow "ServerURL", "Username", "Password" "Endpoint", "TimestampField"
+// @config: shall contain snow "ServerURL", "Username", "Password" "Metric", "TimestampField"
 // "NextRecordTime", "RecordCount" key/values
 func NewSnowDataReader(
 	config base.BaseConfig, writer base.DataWriter, checkpoint base.Checkpointer) *SnowDataReader {
 	acquiredConfigs := []string{base.ServerURL, base.Username, base.Password,
-		endpointKey, timestampFieldKey, nextRecordTimeKey, recordCountKey}
+		base.Metric, timestampFieldKey, nextRecordTimeKey, recordCountKey}
 	for _, key := range acquiredConfigs {
 		if _, ok := config[key]; !ok {
 			glog.Errorf("%s is missing. It is required by Snow data collection", key)
@@ -97,7 +96,7 @@ func (snow *SnowDataReader) getURL() string {
 	var buffer bytes.Buffer
 	buffer.WriteString(snow.config[base.ServerURL])
 	buffer.WriteString("/")
-	buffer.WriteString(snow.config[endpointKey])
+	buffer.WriteString(snow.config[base.Metric])
 	buffer.WriteString(".do?JSONv2&sysparm_query=")
 	buffer.WriteString(snow.config[timestampFieldKey])
 	buffer.WriteString(">=")
@@ -162,7 +161,7 @@ func (snow *SnowDataReader) IndexData() error {
 		metaInfo := map[string]string{
 			base.ServerURL: snow.config[base.ServerURL],
 			base.Username:  snow.config[base.Username],
-			endpointKey:    snow.config[endpointKey],
+			base.Metric:    snow.config[base.Metric],
 		}
 		records, refreshed := snow.removeCollectedRecords(records)
 		allData := base.NewData(metaInfo, make([][]byte, 1))
@@ -172,6 +171,7 @@ func (snow *SnowDataReader) IndexData() error {
 			for k, v := range records[i].(map[string]interface{}) {
 				record = append(record, fmt.Sprintf(`%s="%s"`, k, v))
 			}
+			// FIXME line breaker
 			allData.RawData = append(allData.RawData, []byte(strings.Join(record, ",")))
 			err := snow.writer.WriteData(allData)
 			if err != nil {

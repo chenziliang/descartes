@@ -114,7 +114,7 @@ func writeTaskConfigs(globalConfig base.BaseConfig, snow_task_file, kafka_task_f
 				task[k] = v
 			}
 			task[base.TaskConfigAction] = base.TaskConfigNew
-			task[base.TaskConfigKey] = task[base.KafkaTopic] + "_" + task["Endpoint"]
+			task[base.TaskConfigKey] = task[base.KafkaTopic] + "_" + task[base.Metric]
 			allTasks = append(allTasks, task)
 		}
 	}

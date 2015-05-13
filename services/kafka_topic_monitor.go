@@ -36,11 +36,14 @@ func NewKafkaMetaDataMonitor(config base.BaseConfig, ss *ScheduleService) *Kafka
 	for k, v := range config {
 		topicConfig[k] = v
 	}
-	topicConfig[base.KafkaTopic] = base.TaskStats
-	topicConfig[base.App] = base.KafkaApp
-	topicConfig[base.Interval] = "15"
-	topicConfig[base.ServerURL] = config["SplunkURL"]
-	monitor.AddTopicConfig(topicConfig)
+
+	for _, topic := range []string{base.TaskStats} {
+		topicConfig[base.KafkaTopic] = topic
+		topicConfig[base.App] = base.KafkaApp
+		topicConfig[base.Interval] = "15"
+		topicConfig[base.ServerURL] = config[base.TargetSystem]
+		monitor.AddTopicConfig(topicConfig)
+	}
 	return monitor
 }
 

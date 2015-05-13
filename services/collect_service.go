@@ -39,7 +39,6 @@ func NewCollectService(config base.BaseConfig) *CollectService {
 		return nil
 	}
 
-	// FIXME IP ?
 	host, err := os.Hostname()
 	if err != nil {
 		return nil
@@ -63,8 +62,8 @@ func (cs *CollectService) Start() {
 	}
 
 	go cs.monitorTasks(base.Tasks)
-	go cs.doHeartbeatsThroughKafka()
 	go cs.doHeartbeatsThroughZooKeeper()
+	go cs.reportStatus()
 
 	glog.Infof("CollectService started...")
 }
@@ -85,15 +84,7 @@ func (cs *CollectService) Stop() {
 	glog.Infof("CollectService stopped...")
 }
 
-func (cs *CollectService) sendHeartbeats() {
-	if cs.config[base.Heartbeat] != "kafka" {
-		cs.doHeartbeatsThroughZooKeeper()
-	} else {
-		cs.doHeartbeatsThroughKafka()
-	}
-}
-
-func (cs *CollectService) doHeartbeats(f func(app string, d *base.Data)) {
+func (cs *CollectService) doHeartbeats(f func(app string, d map[string]string)) {
 	stats := map[string]string {
 		base.Host: cs.host,
 		base.Platform: runtime.GOOS,
@@ -109,12 +100,7 @@ func (cs *CollectService) doHeartbeats(f func(app string, d *base.Data)) {
 			stats[base.Timestamp] = fmt.Sprintf("%d", time.Now().UnixNano())
 			for _, app := range cs.jobFactory.Apps() {
 				stats[base.App] = app
-				rawData, _ := json.Marshal(stats)
-				// glog.Infof("Send heartbeat host=%s, app=%s", cs.host, app)
-				data := &base.Data{
-					RawData:  [][]byte{rawData},
-				}
-				f(app, data)
+				f(app, stats)
 			}
 		}
 	}
@@ -127,14 +113,19 @@ func (cs *CollectService) doHeartbeatsThroughZooKeeper() {
 		cs.zkClient.CreateNode(node, nil, true, true)
 	}
 
-	f := func(app string, data *base.Data) {
+	f := func(app string, stats map[string]string) {
+		rawData, _ := json.Marshal(stats)
+		data := &base.Data{
+			RawData:  [][]byte{rawData},
+		}
+
 		node := base.HeartbeatRoot + "/" + cs.host + "!" + app
 		cs.zkClient.SetNode(node, data.RawData[0])
 	}
 	cs.doHeartbeats(f)
 }
 
-func (cs *CollectService) doHeartbeatsThroughKafka() {
+func (cs *CollectService) reportStatus() {
 	brokerConfig := base.BaseConfig{
 		base.KafkaBrokers:   cs.config[base.KafkaBrokers],
 		base.KafkaTopic:     base.TaskStats,
@@ -147,7 +138,22 @@ func (cs *CollectService) doHeartbeatsThroughKafka() {
 	writer.Start()
 	defer writer.Stop()
 
-	f := func(app string, data *base.Data) {
+	metaInfo := map[string]string{
+		base.ServerURL: cs.host,
+		base.App: base.KafkaApp,
+		base.Metric: "collector:stats",
+	}
+
+	f := func(app string, stats map[string]string) {
+		var rawData []byte
+		for k, v := range stats {
+			rawData = append(rawData, []byte(k + "=" + v + ",")...)
+		}
+		data := &base.Data{
+			MetaInfo: metaInfo,
+			RawData:  [][]byte{rawData[:len(rawData) - 1]},
+		}
+
 		writer.WriteData(data)
 	}
 	cs.doHeartbeats(f)
@@ -208,7 +214,7 @@ func (cs *CollectService) handleTasks(data *base.Data) {
 			continue
 		}
 
-		if data.MetaInfo[base.Host] != cs.host {
+		if data.MetaInfo[base.Host] != cs.host && data.MetaInfo[base.Host] != base.Broadcast {
 			return
 		}
 
@@ -226,7 +232,6 @@ func (cs *CollectService) handleTasks(data *base.Data) {
 			if job == nil {
 				return
 			}
-		    glog.Errorf("%s", taskConfig)
 			cs.jobs[taskConfig[base.TaskConfigKey]] = job
 			job.Start()
 		}

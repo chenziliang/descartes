@@ -168,11 +168,9 @@ func (ss *ScheduleService) publishTaskToKafka(params base.JobParam) error {
 }
 
 func (ss *ScheduleService) doPublishTask() {
-	// FIXME base.Key
 	brokerConfig := base.BaseConfig{
 		base.KafkaBrokers: ss.config[base.KafkaBrokers],
 		base.KafkaTopic:   base.Tasks,
-		base.Key:          base.Tasks,
 	}
 
 	writer := kafkawriter.NewKafkaDataWriter(brokerConfig)
@@ -200,7 +198,7 @@ func (ss *ScheduleService) doPublishTask() {
 				continue
 			}
 
-			glog.Infof("%s job=%s", taskConfig[base.App], taskConfig[base.TaskConfigKey])
+			glog.Infof("app=%s job=%s, host=%s", taskConfig[base.App], taskConfig[base.TaskConfigKey], host)
 			meta := base.BaseConfig{
 				base.Host: host,
 			}
@@ -387,7 +385,6 @@ func (ss *ScheduleService) handleTaskStats(data *base.Data) {
 }
 
 func (ss *ScheduleService) monitorTasks() {
-	// <-time.After(time.Duration(heartbeatThreadhold))
 	ss.partitionMonitor.Start()
 	ss.doMonitor(base.TaskConfig)
 }

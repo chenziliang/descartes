@@ -23,7 +23,7 @@ func TestSnowDataReader(t *testing.T) {
 		base.ServerURL:           "https://ven01034.service-now.com",
 		base.Username:            "admin",
 		base.Password:            "splunk123",
-		endpointKey:              "incident",
+		base.Metric:              "incident",
 		timestampFieldKey:        "sys_updated_on",
 		nextRecordTimeKey:        "2014-03-23+08:19:04",
 		recordCountKey:           "5",

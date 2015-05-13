@@ -19,8 +19,8 @@ type SplunkRest struct {
 //             "sourcetype" key/values
 func (rest SplunkRest) IndexData(splunkdURI string, sessionKey string,
 	metaProps *url.Values, data []byte) error {
-	endpoint := splunkdURI + "/services/receivers/simple?" + metaProps.Encode()
-	_, err := rest.SplunkdRequest(endpoint, sessionKey, "POST", nil, data, 3)
+	uri := splunkdURI + "/services/receivers/simple?" + metaProps.Encode()
+	_, err := rest.SplunkdRequest(uri, sessionKey, "POST", nil, data, 3)
 	return err
 }
 
@@ -77,23 +77,23 @@ func (rest SplunkRest) Login(splunkdURI, username, password string) (string, err
 	data.Add("username", username)
 	data.Add("password", password)
 	cred := []byte(data.Encode())
-	endpoint := splunkdURI + "/services/auth/login"
-	req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(cred))
+	uri := splunkdURI + "/services/auth/login"
+	req, err := http.NewRequest("POST", uri, bytes.NewBuffer(cred))
 	if err != nil {
-		glog.Errorf("Failed to create request to %s, reason=%s", endpoint, err)
+		glog.Errorf("Failed to create request to %s, reason=%s", uri, err)
 		return "", err
 	}
 
 	resp, err := rest.client.Do(req)
 	if err != nil {
-		glog.Errorf("Failed to login to %s, error=%s", endpoint, err)
+		glog.Errorf("Failed to login to %s, error=%s", uri, err)
 		return "", err
 	}
 	defer resp.Body.Close()
 
 	res, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		glog.Errorf("Failed to read response from %s, error=%s", endpoint, err)
+		glog.Errorf("Failed to read response from %s, error=%s", uri, err)
 		return "", nil
 	}
 
@@ -103,7 +103,7 @@ func (rest SplunkRest) Login(splunkdURI, username, password string) (string, err
 	var key sessionKey
 	err = xml.Unmarshal(res, &key)
 	if err != nil {
-		glog.Errorf("Failed to parse login XML response from %s, error=%s", endpoint, err)
+		glog.Errorf("Failed to parse login XML response from %s, error=%s", uri, err)
 		return "", err
 	}
 
